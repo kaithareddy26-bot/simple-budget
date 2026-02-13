@@ -14,7 +14,7 @@ class UserRegisterRequest(BaseModel):
             "example": {
                 "email": "user@example.com",
                 "password": "securepassword123",
-                "full_name": "John Doe"
+                "full_name": "Karanukar Kaitha"
             }
         }
     )

@@ -123,10 +123,10 @@ async def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError):
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle general exceptions."""
     error_response = ErrorResponse(
-        error=ErrorDetail(
-            code=ErrorCodes.SYS_INTERNAL_ERROR,
-            message="Internal server error"
-        )
+        error={
+            "code": ErrorCodes.SYS_INTERNAL_ERROR,
+            "message": "Internal server error"
+        }
     )
     
     logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)

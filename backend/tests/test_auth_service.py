@@ -22,19 +22,19 @@ class TestAuthService:
             id=uuid4(),
             email="test@example.com",
             hashed_password="hashed",
-            full_name="Test User"
+            full_name="Kaitha Reddy"
         )
         
         # Act
         user = self.service.register_user(
             email="test@example.com",
             password="password123",
-            full_name="Test User"
+            full_name="Kaitha Reddy"
         )
         
         # Assert
         assert user.email == "test@example.com"
-        assert user.full_name == "Test User"
+        assert user.full_name == "Kaitha Reddy"
         self.mock_repo.get_by_email.assert_called_once_with("test@example.com")
         self.mock_repo.create.assert_called_once()
     
@@ -53,7 +53,7 @@ class TestAuthService:
             self.service.register_user(
                 email="test@example.com",
                 password="password123",
-                full_name="Test User"
+                full_name="Kaitha Reddy"
             )
         
         assert ErrorCodes.AUTH_USER_EXISTS in str(exc_info.value)
@@ -66,7 +66,7 @@ class TestAuthService:
             id=user_id,
             email="test@example.com",
             hashed_password="$2b$12$KIXWsG.6vZ3V6QZYvH8LG.Y3xN3Z8YQK8Z1LlN0Zp8wQZ1LlN0Zp8",  # Mock hash
-            full_name="Test User"
+            full_name="Kaitha Reddy"
         )
         
         # Act
@@ -106,7 +106,7 @@ class TestAuthService:
             id=user_id,
             email="test@example.com",
             hashed_password="hashed",
-            full_name="Test User"
+            full_name="Kaitha Reddy"
         )
         self.mock_repo.get_by_id.return_value = expected_user
         
