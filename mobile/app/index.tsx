@@ -1,13 +1,17 @@
-import RegistrationPage from "@/components/RegistrationPage";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-
+import RegistrationPage from '@/components/RegistrationPage';
+import * as React from 'react';
+import { AppRegistry, View } from 'react-native';
+import { PaperProvider } from 'react-native-paper';
+const appName = "Simple Budgeting App";
 export default function Index() {
   return (
-    <SafeAreaProvider>
-      <SafeAreaView>
-        {/* <WelcomePage /> */}
-        <RegistrationPage />
-      </SafeAreaView>
-  </SafeAreaProvider>
+    <PaperProvider>
+      <View style={{ alignSelf: "center", width: "90%"}}>
+      <RegistrationPage />
+      </View>
+    </PaperProvider>
   );
 }
+
+
+AppRegistry.registerComponent(appName, () => Index);
