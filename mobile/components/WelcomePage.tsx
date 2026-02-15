@@ -1,6 +1,6 @@
-
+import { Text } from "react-native-paper";
 export function WelcomePage() {
   return (
-    <h1>Welcome to Simple Budget!</h1>
+    <Text>Welcome to Simple Budget!</Text>
   );
 }
