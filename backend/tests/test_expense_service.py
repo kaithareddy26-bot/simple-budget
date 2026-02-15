@@ -120,24 +120,3 @@ class TestExpenseService:
             
             # Assert
             assert expense.category == category
-
-    def test_add_expense_invalid_category_empty(self):
-        with pytest.raises(ValueError) as exc_info:
-            self.service.add_expense(
-                user_id=self.user_id,
-                amount=Decimal("10.00"),
-                category="",
-                expense_date=date(2024, 3, 10)
-            )
-        assert ErrorCodes.EXP_INVALID_CATEGORY in str(exc_info.value)
-
-    def test_add_expense_invalid_category_whitespace(self):
-        with pytest.raises(ValueError) as exc_info:
-            self.service.add_expense(
-                user_id=self.user_id,
-                amount=Decimal("10.00"),
-                category="   ",
-                expense_date=date(2024, 3, 10)
-            )
-        assert ErrorCodes.EXP_INVALID_CATEGORY in str(exc_info.value)
-

@@ -23,5 +23,4 @@ class Income(Base):
     __table_args__ = (
         Index('ix_incomes_user_date', 'user_id', 'date'),
         CheckConstraint("amount > 0", name="ck_incomes_amount_positive"),
-        CheckConstraint("length(trim(source)) > 0", name="ck_incomes_source_nonempty"),
     )

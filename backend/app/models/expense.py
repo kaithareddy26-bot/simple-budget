@@ -24,5 +24,4 @@ class Expense(Base):
     __table_args__ = (
         Index('ix_expenses_user_date', 'user_id', 'date'),
         CheckConstraint("amount > 0", name="ck_expenses_amount_positive"),
-        CheckConstraint("length(trim(category)) > 0", name="ck_expenses_category_nonempty"),
     )

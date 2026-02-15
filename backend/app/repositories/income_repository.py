@@ -1,6 +1,6 @@
 from typing import Optional, List
 from uuid import UUID
-from datetime import date
+from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from app.models.income import Income
@@ -27,8 +27,8 @@ class IncomeRepository(BaseRepository[Income]):
     def get_by_user_and_date_range(
         self,
         user_id: UUID,
-        start_date: date,
-        end_date: date
+        start_date: datetime,
+        end_date: datetime
     ) -> List[Income]:
         """Get incomes by user ID and date range."""
         return self.db.query(Income).filter(

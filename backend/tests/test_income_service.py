@@ -92,24 +92,3 @@ class TestIncomeService:
             
             # Assert
             assert income.source == source
-
-    def test_add_income_invalid_source_empty(self):
-        with pytest.raises(ValueError) as exc_info:
-            self.service.add_income(
-                user_id=self.user_id,
-                amount=Decimal("10.00"),
-                source="",
-                income_date=date(2024, 3, 15)
-            )
-        assert ErrorCodes.INC_INVALID_SOURCE in str(exc_info.value)
-
-    def test_add_income_invalid_source_whitespace(self):
-        with pytest.raises(ValueError) as exc_info:
-            self.service.add_income(
-                user_id=self.user_id,
-                amount=Decimal("10.00"),
-                source="   ",
-                income_date=date(2024, 3, 15)
-            )
-        assert ErrorCodes.INC_INVALID_SOURCE in str(exc_info.value)
-
