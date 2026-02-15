@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 
@@ -21,9 +21,8 @@ class Settings(BaseSettings):
     # CORS
     ALLOWED_ORIGINS: list = ["http://localhost:3000", "http://frontend:3000"]
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    # Pydantic v2 Configuration
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 
 @lru_cache()
