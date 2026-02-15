@@ -47,7 +47,10 @@ class ErrorCodes:
     AUTH_TOKEN_EXPIRED = "AUTH-002"        # Token expired
     AUTH_UNAUTHORIZED = "AUTH-003"         # Insufficient permissions (403)
     AUTH_INVALID_CREDENTIALS = "AUTH-004"  # Invalid login credentials
-    AUTH_USER_EXISTS = "USR-001"           # Email already registered
+    
+    # User errors (USR-xxx) — aligned with Week 4 document
+    USER_EXISTS = "USR-001"           # User with given email already exists    
+    USER_NOT_FOUND = "USR-002"        # User with given email not found
 
     
     # Validation errors (VAL-xxx)
