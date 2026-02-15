@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Numeric, Date, ForeignKey, Index
+from sqlalchemy import Column, String, Numeric, Date, ForeignKey, Index, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -22,4 +22,5 @@ class Income(Base):
     # Indexes
     __table_args__ = (
         Index('ix_incomes_user_date', 'user_id', 'date'),
+        CheckConstraint("amount > 0", name="ck_incomes_amount_positive"),
     )
