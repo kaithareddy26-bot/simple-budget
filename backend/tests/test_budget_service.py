@@ -160,3 +160,117 @@ class TestBudgetService:
             )
         
         assert ErrorCodes.BUD_INVALID_AMOUNT in str(exc_info.value)
+
+    # -----------------------------
+    # New tests: strict month validation + DB IntegrityError mapping
+    # -----------------------------
+
+    def test_create_budget_invalid_month_format(self):
+        """Test creating budget with invalid month format (strict YYYY-MM)."""
+        # Arrange
+        self.mock_repo.get_by_user_and_month.return_value = None
+
+        # Act & Assert
+        with pytest.raises(ValueError) as exc_info:
+            self.service.create_budget(
+                user_id=self.user_id,
+                month="2024-3",  # invalid (must be YYYY-MM)
+                amount=Decimal("100.00")
+            )
+
+        assert ErrorCodes.BUD_INVALID_MONTH in str(exc_info.value)
+        self.mock_repo.get_by_user_and_month.assert_not_called()
+        self.mock_repo.create.assert_not_called()
+
+    def test_create_budget_invalid_month_out_of_range(self):
+        """Test creating budget with invalid month range (e.g., 00 or 13)."""
+        # Arrange
+        self.mock_repo.get_by_user_and_month.return_value = None
+
+        # Act & Assert
+        with pytest.raises(ValueError) as exc_info:
+            self.service.create_budget(
+                user_id=self.user_id,
+                month="2024-13",  # invalid month
+                amount=Decimal("100.00")
+            )
+
+        assert ErrorCodes.BUD_INVALID_MONTH in str(exc_info.value)
+        self.mock_repo.get_by_user_and_month.assert_not_called()
+        self.mock_repo.create.assert_not_called()
+
+    def test_create_budget_db_unique_violation_maps_to_already_exists(self):
+        """Test DB unique constraint violation maps to BUD_ALREADY_EXISTS (race condition safe)."""
+        # Arrange
+        self.mock_repo.get_by_user_and_month.return_value = None
+
+        # IntegrityError stub that behaves like sqlalchemy.exc.IntegrityError enough for our mapping
+        class IntegrityErrorStub(Exception):
+            def __init__(self, orig):
+                self.orig = orig
+
+        # Make repo.create raise a unique constraint violation
+        self.mock_repo.create.side_effect = IntegrityErrorStub(
+            'duplicate key value violates unique constraint "uq_user_month"'
+        )
+
+        # Act & Assert
+        with pytest.raises(ValueError) as exc_info:
+            self.service.create_budget(
+                user_id=self.user_id,
+                month="2024-03",
+                amount=Decimal("5000.00")
+            )
+
+        assert ErrorCodes.BUD_ALREADY_EXISTS in str(exc_info.value)
+        self.mock_repo.get_by_user_and_month.assert_called_once_with(self.user_id, "2024-03")
+        self.mock_repo.create.assert_called_once()
+
+    def test_create_budget_db_month_check_violation_maps_to_invalid_month(self):
+        """Test DB month format check constraint violation maps to BUD_INVALID_MONTH."""
+        # Arrange
+        self.mock_repo.get_by_user_and_month.return_value = None
+
+        class IntegrityErrorStub(Exception):
+            def __init__(self, orig):
+                self.orig = orig
+
+        self.mock_repo.create.side_effect = IntegrityErrorStub(
+            'new row for relation "budgets" violates check constraint "ck_budgets_month_format"'
+        )
+
+        # Act & Assert
+        with pytest.raises(ValueError) as exc_info:
+            self.service.create_budget(
+                user_id=self.user_id,
+                month="2024-03",
+                amount=Decimal("5000.00")
+            )
+
+        assert ErrorCodes.BUD_INVALID_MONTH in str(exc_info.value)
+        self.mock_repo.create.assert_called_once()
+
+    def test_create_budget_db_amount_check_violation_maps_to_invalid_amount(self):
+        """Test DB amount check constraint violation maps to BUD_INVALID_AMOUNT."""
+        # Arrange
+        self.mock_repo.get_by_user_and_month.return_value = None
+
+        class IntegrityErrorStub(Exception):
+            def __init__(self, orig):
+                self.orig = orig
+
+        self.mock_repo.create.side_effect = IntegrityErrorStub(
+            'new row for relation "budgets" violates check constraint "ck_budgets_amount_positive"'
+        )
+
+        # Act & Assert
+        with pytest.raises(ValueError) as exc_info:
+            self.service.create_budget(
+                user_id=self.user_id,
+                month="2024-03",
+                amount=Decimal("5000.00")
+            )
+
+        assert ErrorCodes.BUD_INVALID_AMOUNT in str(exc_info.value)
+        self.mock_repo.create.assert_called_once()
+
