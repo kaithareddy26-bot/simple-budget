@@ -1,38 +1,42 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional, Dict, Any
+from typing import Optional, List
 
 
 class ErrorDetail(BaseModel):
-    """Standard error detail schema."""
-    
-    code: str
-    message: str
+    """Week 4 details item schema."""
     field: Optional[str] = None
+    issue: str
     
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "code": "VAL-001",
-                "message": "Invalid input data",
-                "field": "email"
+                "field": "month",
+                "issue": "Month must be in YYYY-MM format"
             }
         }
     )
 
 
 class ErrorResponse(BaseModel):
-    """Standard error response schema."""
-    
-    error: Dict[str, Any]
+    """Week 4 error envelope schema."""
+    timestamp: str
+    status: int
+    error: str
+    errorCode: str
+    message: str
+    path: str
+    details: Optional[List[ErrorDetail]] = None
     
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "error": {
-                    "code": "VAL-001",
-                    "message": "Invalid input data",
-                    "field": "email"
-                }
+                "timestamp": "2024-03-15T10:30:00Z",
+                "status": 400,
+                "error": "Bad Request",
+                "errorCode": "VAL-001",
+                "message": "Invalid input data",
+                "path": "/api/v1/reports/summary",
+                "details": [{"field": "month", "issue": "Month must be in YYYY-MM format"}]
             }
         }
     )
