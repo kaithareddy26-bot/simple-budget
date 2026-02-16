@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, patch
 from uuid import uuid4
 from app.services.auth_service import AuthService
 from app.models.user import User
@@ -56,33 +56,37 @@ class TestAuthService:
                 full_name="Kaitha Reddy"
             )
         
-        assert ErrorCodes.AUTH_USER_EXISTS in str(exc_info.value)
+        assert ErrorCodes.USER_EXISTS in str(exc_info.value)
     
     def test_login_user_success(self):
-        """Test successful user login."""
-        # Arrange
         user_id = uuid4()
         self.mock_repo.get_by_email.return_value = User(
             id=user_id,
             email="test@example.com",
-            hashed_password="$2b$12$KIXWsG.6vZ3V6QZYvH8LG.Y3xN3Z8YQK8Z1LlN0Zp8wQZ1LlN0Zp8",  # Mock hash
+            hashed_password="does-not-matter",
             full_name="Kaitha Reddy"
         )
-        
-        # Act
-        # Note: This will fail with real bcrypt, but demonstrates the test structure
-        # In real tests, you would mock the verify_password function
-        try:
-            token = self.service.login_user(
-                email="test@example.com",
-                password="password123"
-            )
-            # Assert
-            assert isinstance(token, str)
-            assert len(token) > 0
-        except ValueError:
-            # Expected if password verification fails with mock hash
-            pass
+
+        with patch("app.services.auth_service.verify_password", return_value=True), \
+            patch("app.services.auth_service.create_access_token", return_value="fake.jwt.token"):
+            token = self.service.login_user(email="test@example.com", password="password123")
+
+        assert token == "fake.jwt.token"
+        self.mock_repo.get_by_email.assert_called_once_with("test@example.com")
+
+    def test_login_user_invalid_password(self):
+        self.mock_repo.get_by_email.return_value = User(
+            id=uuid4(),
+            email="test@example.com",
+            hashed_password="hashed",
+            full_name="Kaitha Reddy"
+        )
+
+        with patch("app.services.auth_service.verify_password", return_value=False):
+            with pytest.raises(ValueError) as exc_info:
+                self.service.login_user(email="test@example.com", password="wrong")
+
+        assert ErrorCodes.AUTH_INVALID_CREDENTIALS in str(exc_info.value)
     
     def test_login_user_invalid_email(self):
         """Test login with non-existent email."""

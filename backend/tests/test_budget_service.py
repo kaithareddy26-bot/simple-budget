@@ -161,6 +161,20 @@ class TestBudgetService:
         
         assert ErrorCodes.BUD_INVALID_AMOUNT in str(exc_info.value)
 
+    def test_update_budget_amount_not_found(self):
+        budget_id = uuid4()
+        self.mock_repo.get_by_id.return_value = None
+
+        with pytest.raises(ValueError) as exc_info:
+            self.service.update_budget_amount(
+                budget_id=budget_id,
+                user_id=self.user_id,
+                new_amount=Decimal("100.00")
+            )
+
+        assert ErrorCodes.BUD_NOT_FOUND in str(exc_info.value)
+        self.mock_repo.update.assert_not_called()
+        
     # -----------------------------
     # New tests: strict month validation + DB IntegrityError mapping
     # -----------------------------
