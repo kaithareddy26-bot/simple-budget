@@ -23,7 +23,7 @@ class ErrorDetail(BaseModel):
 class ErrorResponse(BaseModel):
     """Standard error response schema."""
     
-    error: Dict[str, Any]
+    error: ErrorDetail
     
     model_config = ConfigDict(
         json_schema_extra={

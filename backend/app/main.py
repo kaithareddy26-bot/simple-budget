@@ -28,13 +28,13 @@ app = FastAPI(
     description="Cross-Platform Budgeting Application API"
 )
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # Register exception handlers
