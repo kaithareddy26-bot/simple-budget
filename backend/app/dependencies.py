@@ -18,7 +18,7 @@ from app.services import (
 )
 from app.utils.security import decode_access_token
 from app.schemas.auth_schemas import TokenData
-from app.schemas.error_schemas import ErrorCodes, ErrorDetail, ErrorResponse
+from app.schemas.error_schemas import ErrorCodes
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -97,12 +97,7 @@ def get_current_user(
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=ErrorResponse(
-                error=ErrorDetail(
-                    code=ErrorCodes.AUTH_INVALID_TOKEN,
-                    message="Invalid or expired token"
-                )
-            ).model_dump(),
+            detail="Missing or invalid token",
             headers={"WWW-Authenticate": "Bearer"}
         )
     
@@ -113,12 +108,7 @@ def get_current_user(
         if user_id is None or email is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=ErrorResponse(
-                    error=ErrorDetail(
-                        code=ErrorCodes.AUTH_INVALID_TOKEN,
-                        message="Invalid token payload"
-                    )
-                ).model_dump(),
+                detail="Invalid token payload",
                 headers={"WWW-Authenticate": "Bearer"}
             )
         
@@ -127,12 +117,7 @@ def get_current_user(
         if user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=ErrorResponse(
-                    error=ErrorDetail(
-                        code=ErrorCodes.AUTH_INVALID_TOKEN,
-                        message="User not found"
-                    )
-                ).model_dump(),
+                detail="User not found",
                 headers={"WWW-Authenticate": "Bearer"}
             )
         
@@ -141,11 +126,6 @@ def get_current_user(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=ErrorResponse(
-                error=ErrorDetail(
-                    code=ErrorCodes.AUTH_INVALID_TOKEN,
-                    message="Invalid token format"
-                )
-            ).model_dump(),
+            detail="Invalid token format",
             headers={"WWW-Authenticate": "Bearer"}
         )

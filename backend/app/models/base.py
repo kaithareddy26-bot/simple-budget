@@ -27,5 +27,9 @@ def get_db():
 
 
 def init_db():
-    """Initialize database tables."""
-    Base.metadata.create_all(bind=engine)
+    """
+    Initialize database tables (DEV ONLY).
+    Week 4 design uses versioned migrations (Flyway) for real environments.
+    """
+    if getattr(settings, "RUN_DB_INIT", False):
+        Base.metadata.create_all(bind=engine)

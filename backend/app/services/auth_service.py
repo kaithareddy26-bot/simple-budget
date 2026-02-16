@@ -26,7 +26,7 @@ class AuthService:
         # Check if user already exists
         existing_user = self.user_repository.get_by_email(email)
         if existing_user:
-            raise ValueError(f"{ErrorCodes.AUTH_USER_EXISTS}:User with this email already exists")
+            raise ValueError(f"{ErrorCodes.USER_EXISTS}:User with this email already exists")
         
         # Hash password
         hashed_password = hash_password(password)

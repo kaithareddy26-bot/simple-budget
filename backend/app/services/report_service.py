@@ -6,6 +6,7 @@ from app.repositories.income_repository import IncomeRepository
 from app.repositories.expense_repository import ExpenseRepository
 from app.utils.validators import validate_month_format, get_month_range
 from app.schemas.error_schemas import ErrorCodes
+from datetime import datetime, timezone
 
 
 # Strategy Pattern: Report Calculation Strategy
@@ -101,6 +102,7 @@ class ReportGeneratorFactory:
         return ReportGenerator(income_repository, expense_repository)
 
 
+
 # Service Layer
 class ReportService:
     """Report service containing business logic."""
@@ -112,6 +114,10 @@ class ReportService:
     ):
         self.income_repository = income_repository
         self.expense_repository = expense_repository
+
+    @staticmethod
+    def utc_now():
+        return datetime.now(timezone.utc)
     
     def get_monthly_summary(self, user_id: UUID, month: str) -> Dict:
         """

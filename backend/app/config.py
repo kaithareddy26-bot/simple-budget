@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql://postgres:budget_pass@db:5432/budget_db"
     
+    # Set to True to initialize DB tables on startup (DEV ONLY)
+    RUN_DB_INIT: bool = False
+    
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"

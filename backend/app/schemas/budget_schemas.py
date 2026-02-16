@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from uuid import UUID
 from decimal import Decimal
+from datetime import datetime
 import re
 
 
@@ -47,19 +48,24 @@ class BudgetUpdateRequest(BaseModel):
 class BudgetResponse(BaseModel):
     """Budget response schema."""
     
-    id: UUID
-    user_id: UUID
+    id: UUID = Field(serialization_alias="budgetId")
+    user_id: UUID = Field(serialization_alias="userId")
     month: str
-    amount: Decimal
+    amount: Decimal = Field(serialization_alias="totalAmount")
+    created_at: datetime | None = Field(default=None, serialization_alias="createdAt")
+    updated_at: datetime | None = Field(default=None, serialization_alias="updatedAt")
     
     model_config = ConfigDict(
         from_attributes=True,
+        populate_by_name=True,
         json_schema_extra={
             "example": {
-                "id": "550e8400-e29b-41d4-a716-446655440000",
-                "user_id": "660e8400-e29b-41d4-a716-446655440000",
+                "budgetId": "550e8400-e29b-41d4-a716-446655440000",
+                "userId": "660e8400-e29b-41d4-a716-446655440000",
                 "month": "2024-03",
-                "amount": 5000.00
+                "totalAmount": 5000.00,
+                "createdAt": "2024-03-01T00:00:00Z",
+                "updatedAt": "2024-03-02T00:00:00Z"
             }
         }
     )

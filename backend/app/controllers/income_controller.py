@@ -39,10 +39,4 @@ async def add_income(
         income_date=request.date
     )
     
-    return IncomeResponse(
-        id=income.id,
-        user_id=income.user_id,
-        amount=income.amount,
-        source=income.source,
-        date=income.date
-    )
+    return income

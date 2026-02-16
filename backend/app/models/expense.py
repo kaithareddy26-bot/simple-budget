@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Numeric, Date, ForeignKey, Index, Text, CheckConstraint
+from sqlalchemy import Column, String, Numeric, Date, ForeignKey, Index, Text, CheckConstraint, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -16,6 +16,7 @@ class Expense(Base):
     category = Column(String(100), nullable=False)
     date = Column(Date, nullable=False)
     note = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     # Relationships
     user = relationship("User", back_populates="expenses")
