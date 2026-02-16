@@ -1,0 +1,57 @@
+name: Publish API Docs
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Export OpenAPI JSON
+        run: |
+          cd backend
+          python scripts/export_openapi.py
+          mv openapi.json ../openapi.json
+
+      - name: Build Swagger UI site
+        run: |
+          mkdir -p site/api
+          curl -L -o swagger-ui.zip https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.17.14.zip
+          unzip -q swagger-ui.zip
+          cp -r swagger-ui-*/dist/* site/api/
+          cp openapi.json site/api/openapi.json
+          # Point Swagger UI to your spec
+          sed -i 's|https://petstore.swagger.io/v2/swagger.json|openapi.json|g' site/api/swagger-initializer.js
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
