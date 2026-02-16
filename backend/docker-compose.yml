@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: budget_user
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: budget_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://budget_user:secret@db:5432/budget_db
+    depends_on:
+      - db
+volumes:
+  pgdata:

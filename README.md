@@ -3,23 +3,31 @@ Cross-Platform Budgeting Application
 
 A REST API for personal budgeting and financial tracking.
 
-Built with FastAPI, PostgreSQL, and a clean layered architecture, this backend is designed to support a future web-based frontend GUI (not yet implemented).
+Built with FastAPI and PostgreSQL, this backend provides secure authentication, budget management, income and expense tracking, and monthly financial reporting. It is designed to support a future web-based frontend GUI (not yet implemented).
 
-Overview
+Live API Documentation
 
-Simple Budget enables users to:
+Interactive API documentation is available at:
 
-Register and authenticate securely
+https://jl7283.github.io/simple-budget/api/
 
-Define monthly budgets
+This documentation is automatically generated from the OpenAPI specification via GitHub Actions.
 
-Track income and expenses
+Features
 
-Generate monthly financial summaries
+Secure user registration and JWT authentication
 
-Analyze spending by category
+Monthly budget creation and updates
 
-The system is designed with strong architectural discipline and deployment readiness in mind.
+Income tracking
+
+Expense tracking with category grouping
+
+Monthly financial summaries
+
+Standardized error envelope
+
+Versioned database migration strategy
 
 Architecture
 
@@ -38,13 +46,11 @@ Dependency injection
 
 Repository pattern
 
-Standardized error envelope
-
 Contract-driven API design
 
-Versioned schema migrations
+Centralized error handling
 
-Deterministic service-layer unit tests
+Deterministic unit testing
 
 Technology Stack
 
@@ -56,60 +62,120 @@ SQLAlchemy
 
 PostgreSQL
 
-JWT authentication
-
 Pydantic v2
+
+JWT Authentication
 
 Pytest
 
 Flyway (database migrations)
 
-Planned Frontend
+GitHub Actions (CI + documentation publishing)
 
-This backend is intended to power a web-based GUI (planned future implementation).
+Setup Instructions
+1. Clone the Repository
+git clone https://github.com/jl7283/simple-budget.git
+cd simple-budget/backend
 
-The frontend will:
+2. Create a Virtual Environment
 
-Consume the REST API
+PowerShell:
 
-Provide dashboards and charts
+python -m venv .venv
+.venv\Scripts\Activate
+pip install -r requirements.txt
 
-Visualize monthly summaries
 
-Display category breakdowns
+Mac/Linux:
 
-Support responsive UX
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 
-The backend API contract is stable and ready for frontend integration.
+Environment Configuration
 
-Core Features
-Authentication
+Create a .env file inside the backend directory:
 
-Secure user registration
+DATABASE_URL=postgresql://budget_user:budget_pass@localhost:5432/budget_db
+SECRET_KEY=your-secret-key
+RUN_DB_INIT=false
+ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-JWT-based login
 
-Protected endpoints via Bearer tokens
+Notes:
 
-Budget Management
+RUN_DB_INIT=false is recommended when using Flyway migrations.
 
-Create monthly budgets
+Set RUN_DB_INIT=true only for local rapid development without migrations.
 
-Update budget amounts
+Database Setup
 
-Retrieve budgets by ID
+Ensure PostgreSQL is running locally.
 
-Income and Expense Tracking
+Create the database:
 
-Add income entries
+createdb budget_db
 
-Add expense entries
+Using Flyway (Recommended)
 
-Category-based grouping
+Run migrations:
 
-Monthly Reporting
+flyway migrate
 
-Example response:
+Development Mode (Optional)
+
+If not using Flyway:
+
+RUN_DB_INIT=true
+
+
+The application will auto-create tables using SQLAlchemy.
+
+Running the Application Locally
+
+From the backend directory:
+
+uvicorn app.main:app --reload
+
+
+The API will be available at:
+
+http://127.0.0.1:8000
+
+
+Swagger UI:
+
+http://127.0.0.1:8000/docs
+
+
+OpenAPI JSON:
+
+http://127.0.0.1:8000/openapi.json
+
+Running Tests
+
+From the backend directory:
+
+pytest -q
+
+
+The test suite includes:
+
+AuthService validation and credential checks
+
+BudgetService business rule enforcement
+
+Income and Expense validation
+
+ReportService month boundary validation
+
+Error contract verification
+
+All tests should pass before committing changes.
+
+Example API Response
+
+Monthly summary response:
 
 {
   "month": "2024-03",
@@ -122,145 +188,50 @@ Example response:
   "generatedAt": "2026-02-16T02:38:52Z"
 }
 
-API Conventions
+CI/CD
 
-Base path:
+GitHub Actions provides:
 
-/api/v1
+Automated test execution on push and pull request
 
-Standard Error Envelope
+Automatic OpenAPI generation
 
-All errors follow a consistent structure:
+Automatic publishing of Swagger UI documentation to GitHub Pages
 
-{
-  "timestamp": "2026-02-16T02:28:46Z",
-  "status": 401,
-  "error": "Unauthorized",
-  "errorCode": "AUTH-001",
-  "message": "Missing or invalid token",
-  "path": "/api/v1/budgets"
-}
+API documentation is published at:
 
-
-Validation errors include a "details" array.
-
-Database Migration Strategy
-
-Schema changes are managed via Flyway versioned migrations.
-
-Production flow:
-
-Apply migrations
-
-Start API server
-
-flyway migrate
-uvicorn app.main:app
-
-
-Development mode only:
-
-RUN_DB_INIT=true
-
-
-Default committed configuration:
-
-RUN_DB_INIT=false
-
-
-This prevents unintended schema drift in production.
-
-Getting Started
-1. Clone the repository
-git clone <repo-url>
-cd simple-budget/backend
-
-2. Create a virtual environment
-
-PowerShell:
-
-python -m venv .venv
-.venv\Scripts\Activate
-pip install -r requirements.txt
-
-3. Configure environment
-
-Create a .env file (not committed):
-
-DATABASE_URL=postgresql://budget_user:budget_pass@localhost:5432/budget_db
-SECRET_KEY=your-secret-key
-RUN_DB_INIT=false
-
-4. Run migrations
-flyway migrate
-
-5. Start the server
-uvicorn app.main:app --reload
-
-
-Visit:
-
-http://127.0.0.1:8000/docs
-
-Testing
-
-Run all tests:
-
-pytest -q
-
-
-The test suite includes:
-
-AuthService credential validation
-
-Budget business rule enforcement
-
-Income and expense validation
-
-Strict month-boundary validation for reporting
-
-Error contract consistency
-
-Deterministic mocking for security functions
-
-All tests pass.
-
-Security Considerations
-
-Passwords are hashed before storage
-
-JWT tokens use configurable secret and expiration
-
-Unauthorized access returns standardized error responses
-
-Business rule validation enforced in service layer
+https://jl7283.github.io/simple-budget/api/
 
 Deployment Considerations
 
-Designed for containerization
+Environment-driven configuration
 
 Migration-first startup pattern
 
-Environment-driven configuration
+Strict error contract for frontend compatibility
 
-Strict error contract for frontend stability
+JWT-based authentication
 
-Clear separation between development convenience and production behavior
+Designed for containerization
 
 Project Structure
-app/
-  controllers/
-  services/
-  repositories/
-  models/
-  schemas/
-  utils/
-  config.py
-  main.py
-
-tests/
+backend/
+  app/
+    controllers/
+    services/
+    repositories/
+    models/
+    schemas/
+    utils/
+    main.py
+    config.py
+  scripts/
+    export_openapi.py
+  tests/
 
 Status
 
 Backend API complete and production-structured.
 Frontend GUI pending implementation.
+
+
