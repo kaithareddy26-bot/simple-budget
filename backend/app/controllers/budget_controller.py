@@ -41,12 +41,7 @@ async def create_budget(
         amount=request.amount
     )
     
-    return BudgetResponse(
-        id=budget.id,
-        user_id=budget.user_id,
-        month=budget.month,
-        amount=budget.amount
-    )
+    return budget
 
 
 @router.get(
@@ -75,12 +70,7 @@ async def get_budget(
         user_id=current_user.user_id
     )
     
-    return BudgetResponse(
-        id=budget.id,
-        user_id=budget.user_id,
-        month=budget.month,
-        amount=budget.amount
-    )
+    return budget
 
 
 @router.put(
@@ -113,9 +103,4 @@ async def update_budget(
         new_amount=request.amount
     )
     
-    return BudgetResponse(
-        id=budget.id,
-        user_id=budget.user_id,
-        month=budget.month,
-        amount=budget.amount
-    )
+    return budget

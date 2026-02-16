@@ -40,11 +40,4 @@ async def add_expense(
         note=request.note
     )
     
-    return ExpenseResponse(
-        id=expense.id,
-        user_id=expense.user_id,
-        amount=expense.amount,
-        category=expense.category,
-        date=expense.date,
-        note=expense.note
-    )
+    return expense

@@ -42,5 +42,6 @@ async def get_monthly_summary(
         total_income=summary["total_income"],
         total_expenses=summary["total_expenses"],
         net_balance=summary["net_balance"],
-        expenses_by_category=summary["expenses_by_category"]
+        expenses_by_category=summary["expenses_by_category"],
+        generated_at=report_service.utc_now()
     )
