@@ -26,9 +26,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Export OpenAPI JSON
-        working-directory: backend
         run: |
-          python -m scripts.export_openapi
+          cd backend
+          python scripts/export_openapi.py
           mv openapi.json ../openapi.json
 
       - name: Build Swagger UI site
