@@ -50,3 +50,13 @@ class ExpenseService:
         
         # Persist expense
         return self.expense_repository.create(expense)
+    
+    def get_current_month_expenses(self, user_id: UUID) -> list[Expense]:
+        """
+        Get current month's expenses for a user.
+        
+        """
+        from datetime import datetime
+        current_month = datetime.now().strftime("%Y-%m")
+        print("DEBUG: Fetching current month expenses for user_id:", user_id, "current_month:", current_month)
+        return self.expense_repository.get_by_user_and_month(user_id, current_month)

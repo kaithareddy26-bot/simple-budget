@@ -45,6 +45,34 @@ async def create_budget(
 
 
 @router.get(
+    "/current-month",
+    response_model=BudgetResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Budget retrieved successfully"},
+        401: {"model": ErrorResponse, "description": "Unauthorized"},
+        403: {"model": ErrorResponse, "description": "Access forbidden"},
+        404: {"model": ErrorResponse, "description": "Budget not found"}
+    }
+)
+async def get_current_month_budget(
+    current_user: TokenData = Depends(get_current_user),
+    budget_service: BudgetService = Depends(get_budget_service)
+):
+    """
+    Retrieve the current month's budget for the authenticated user.
+    
+    
+    Returns the budget details. Users can only access their own budgets.
+    """
+    budget = budget_service.get_current_month_budget(
+        user_id=current_user.user_id
+    )
+    
+    return budget
+
+
+@router.get(
     "/{budgetId}",
     response_model=BudgetResponse,
     status_code=status.HTTP_200_OK,

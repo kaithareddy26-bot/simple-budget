@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status
+from typing import List
 from app.schemas.expense_schemas import (
     ExpenseCreateRequest,
     ExpenseResponse
@@ -41,3 +42,28 @@ async def add_expense(
     )
     
     return expense
+
+@router.get(
+    "/current-month",
+    response_model=List[ExpenseResponse],
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Expenses retrieved successfully"},
+        400: {"model": ErrorResponse, "description": "Validation error or invalid amount"},
+        401: {"model": ErrorResponse, "description": "Unauthorized"}
+    }
+)
+async def get_current_month_expenses(
+    current_user: TokenData = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service)
+):
+    """
+    Retrieve current month's expenses for the authenticated user.
+    
+    Returns a list of expense records for the current month.
+    """
+
+    expenses = expense_service.get_current_month_expenses(user_id=current_user.user_id)
+
+    return expenses
+

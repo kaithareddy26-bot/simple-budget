@@ -135,3 +135,13 @@ class BudgetService:
         
         # Persist changes
         return self.budget_repository.update(budget)
+    
+    def get_current_month_budget(self, user_id: UUID) -> Optional[Budget]:
+        """
+        Get current month's budget for a user.
+        
+        """
+        from datetime import datetime
+        current_month = datetime.now().strftime("%Y-%m")
+        print("DEBUG: Fetching current month budget for user_id:", user_id, "current_month:", current_month)
+        return self.budget_repository.get_by_user_and_month(user_id, current_month)
