@@ -8,11 +8,11 @@ export default function AlertMessage({
   isError?: boolean;
 }) {
 	const textTheme = {
-		colors: { onSurface: isError? "red" : "black" }
+    colors: { onSurface: "white" }
 	};
 
 	const bannerTheme = {
-		backgroundColor: "red"
+    backgroundColor: isError ? "red" : "green"
 	}
   return (
     <Banner style={bannerTheme} visible={true}>

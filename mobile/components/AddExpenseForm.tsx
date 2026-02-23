@@ -1,6 +1,8 @@
 import AppContext from "@/app/context/AppContext";
 import sharedStyles from "@/styles/shared";
+import getErrorMessage from "@/utilities/getErrorMessage";
 import { useIsFocused } from "@react-navigation/native";
+import { Redirect } from "expo-router";
 import { useContext, useEffect, useState } from "react";
 import { Button, Text, TextInput } from "react-native-paper";
 export function AddExpenseForm() {
@@ -10,7 +12,7 @@ export function AddExpenseForm() {
     const [amount, setAmount] = useState("");
     const [note, setNote] = useState("");
     const isFocused = useIsFocused();
-    
+
     const handleFormSubmit = async () => {
         console.log("Form Submitted!");
         const url = "http://localhost:8000/api/v1/expenses";
@@ -29,7 +31,7 @@ export function AddExpenseForm() {
         };
         try {
             const response = await fetch(url, options);
-            const data = await response.json();
+            const data: unknown = await response.json();
             console.log(data);
             if (response.ok) {
                 // Registration successful, handle accordingly (e.g., navigate to login page)
@@ -37,8 +39,9 @@ export function AddExpenseForm() {
             } else {
                 // Handle login failure (e.g., display error message)
                 console.error("Expense creation failed:", data);
-                setErrorMessage(data.error?.message || "Expense creation failed");
-                throw new Error(data.error?.message || "Expense creation failed");
+                const message = getErrorMessage(data, "Expense creation failed");
+                setErrorMessage(message);
+                throw new Error(message);
             }
         } catch (error) {
             console.error(error);
@@ -53,6 +56,10 @@ export function AddExpenseForm() {
         setCategory("");
         setNote("");
     }, [isFocused]);
+
+    if (!jwt) {
+        return <Redirect href="/login" />;
+    }
     
     return (
         <>

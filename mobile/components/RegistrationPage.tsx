@@ -1,7 +1,8 @@
-import AppContext from "@/app/context/AppContext";
 import AlertMessage from "@/components/utility/AlertMessage";
 import sharedStyles from "@/styles/shared";
-import { useContext, useEffect, useState } from "react";
+import getErrorMessage from "@/utilities/getErrorMessage";
+import { useEffect, useState } from "react";
+import { router } from "expo-router";
 import { Button, Text, TextInput } from "react-native-paper";
 
 export default function RegistrationPage() {
@@ -9,7 +10,15 @@ export default function RegistrationPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-	const setJwt = useContext(AppContext).setJwt;
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const clearMessages = () => {
+    if (errorMessage || successMessage) {
+      setErrorMessage("");
+      setSuccessMessage("");
+    }
+  };
+
 useEffect(() => {
 	console.log("Registration Mounted");
 }, []);
@@ -33,13 +42,24 @@ useEffect(() => {
       const data = await response.json();
       console.log(data);
       if (response.ok) {
-        // Registration successful, handle accordingly (e.g., navigate to login page)
         console.log("Registration successful!");
+        setErrorMessage("");
+        setSuccessMessage("Registration successful");
+        setEmail("");
+        setFullName("");
+        setPassword("");
+        setTimeout(() => {
+          setSuccessMessage("");
+          setErrorMessage("");
+          router.replace("/(tabs)/login");
+        }, 1200);
       } else {
         // Handle registration failure (e.g., display error message)
         console.error("Registration failed:", data);
-        setErrorMessage(data.error?.message || "Registration failed");
-        throw new Error(data.error?.message || "Registration failed");
+        const message = getErrorMessage(data, "Registration failed");
+        setSuccessMessage("");
+        setErrorMessage(message);
+        throw new Error(message);
       }
     } catch (error) {
       console.error(error);
@@ -50,27 +70,37 @@ useEffect(() => {
       <Text variant="displayLarge" style={sharedStyles.centeredText.text} theme={{ colors: { onSurface: "black" } }}>
         Register for SimpleBudgetApp
       </Text>
-      {errorMessage && <AlertMessage message={errorMessage} />}
+      {errorMessage && <AlertMessage message={errorMessage} isError={true} />}
+      {successMessage && <AlertMessage message={successMessage} isError={false} />}
       <TextInput
         mode="outlined"
         style={sharedStyles.lightMargin.textInput}
         placeholder="Email"
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(value) => {
+          clearMessages();
+          setEmail(value);
+        }}
       />
       <TextInput
         mode="outlined"
         style={sharedStyles.lightMargin.textInput}
         placeholder="Full Name"
         value={fullName}
-        onChangeText={setFullName}
+        onChangeText={(value) => {
+          clearMessages();
+          setFullName(value);
+        }}
       />
       <TextInput
         mode="outlined"
         style={sharedStyles.lightMargin.textInput}
         placeholder="Password"
         value={password}
-        onChangeText={setPassword}
+        onChangeText={(value) => {
+          clearMessages();
+          setPassword(value);
+        }}
         secureTextEntry={true}
       />
       <Button
