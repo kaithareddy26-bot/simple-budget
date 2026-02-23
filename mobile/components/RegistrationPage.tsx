@@ -24,8 +24,6 @@ export default function RegistrationPage() {
   useEffect(() => {
     console.log("Registration Mounted");
   }, []);
-<<<<<<< HEAD
-=======
 
   useEffect(() => {
     if (isFocused) {
@@ -36,7 +34,6 @@ export default function RegistrationPage() {
       setSuccessMessage("");
     }
   }, [isFocused]);
->>>>>>> e626871 (fix(mobile): reset registration form on focus and format currency display)
   const handleRegistrationSubmit = async () => {
     console.log("Form Submitted!");
     const url = "http://localhost:8000/api/v1/auth/register";
