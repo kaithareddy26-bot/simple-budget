@@ -174,6 +174,16 @@ class TestBudgetService:
 
         assert ErrorCodes.BUD_NOT_FOUND in str(exc_info.value)
         self.mock_repo.update.assert_not_called()
+
+    def test_get_current_month_budget_not_found(self):
+        """Test current month budget retrieval when budget does not exist."""
+        self.mock_repo.get_by_user_and_month.return_value = None
+
+        with pytest.raises(ValueError) as exc_info:
+            self.service.get_current_month_budget(self.user_id)
+
+        assert ErrorCodes.BUD_NOT_FOUND in str(exc_info.value)
+        self.mock_repo.get_by_user_and_month.assert_called_once()
         
     # -----------------------------
     # New tests: strict month validation + DB IntegrityError mapping

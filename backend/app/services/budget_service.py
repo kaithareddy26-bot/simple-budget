@@ -144,4 +144,9 @@ class BudgetService:
         from datetime import datetime
         current_month = datetime.now().strftime("%Y-%m")
         print("DEBUG: Fetching current month budget for user_id:", user_id, "current_month:", current_month)
-        return self.budget_repository.get_by_user_and_month(user_id, current_month)
+        budget = self.budget_repository.get_by_user_and_month(user_id, current_month)
+
+        if not budget:
+            raise ValueError(f"{ErrorCodes.BUD_NOT_FOUND}:Budget not found")
+
+        return budget
