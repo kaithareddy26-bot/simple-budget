@@ -141,6 +141,7 @@ export function WelcomePage() {
   useEffect(() => {
     console.log("HomePage focus state changed. Is focused:", isFocused);
     setErrorMessage("");
+    setBudgetAmount("");
     console.log("HomePage is focused, refetching budget and expenses");
     fetchBudget();
     setExpensesData([]);
@@ -168,7 +169,7 @@ export function WelcomePage() {
           <>
             <Text theme={blackTextTheme} variant="headlineLarge">Set your monthly budget to get started</Text>
             <TextInput
-              label="Monthly budget"
+              label="Monthly budget ($)"
               value={budgetAmount}
               onChangeText={setBudgetAmount}
               keyboardType="decimal-pad"
@@ -178,7 +179,7 @@ export function WelcomePage() {
             </Button>
           </>
         ) : null}
-        {budgetData && <Text theme={blackTextTheme} variant="headlineLarge">Current month budget: {budgetData.totalAmount}</Text>}
+        {budgetData && <Text theme={blackTextTheme} variant="headlineLarge">Current month budget: ${budgetData.totalAmount}</Text>}
         {budgetData && expensesData && expensesData.map((expense: ExpenseData) => (
           <ExpenseCard key={expense.id} header={expense.category} amount={expense.amount} note={expense.note || ""} />
         ))}

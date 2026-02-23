@@ -1,6 +1,7 @@
 import AlertMessage from "@/components/utility/AlertMessage";
 import sharedStyles from "@/styles/shared";
 import getErrorMessage from "@/utilities/getErrorMessage";
+import { useIsFocused } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import { Button, Text, TextInput } from "react-native-paper";
@@ -11,6 +12,7 @@ export default function RegistrationPage() {
   const [fullName, setFullName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const isFocused = useIsFocused();
 
   const clearMessages = () => {
     if (errorMessage || successMessage) {
@@ -22,6 +24,19 @@ export default function RegistrationPage() {
   useEffect(() => {
     console.log("Registration Mounted");
   }, []);
+<<<<<<< HEAD
+=======
+
+  useEffect(() => {
+    if (isFocused) {
+      setEmail("");
+      setFullName("");
+      setPassword("");
+      setErrorMessage("");
+      setSuccessMessage("");
+    }
+  }, [isFocused]);
+>>>>>>> e626871 (fix(mobile): reset registration form on focus and format currency display)
   const handleRegistrationSubmit = async () => {
     console.log("Form Submitted!");
     const url = "http://localhost:8000/api/v1/auth/register";
