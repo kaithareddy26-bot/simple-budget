@@ -38,13 +38,16 @@ export default function LoginPage() {
             console.error(error);
         }
     };
+    const blackTextTheme = {
+        colors: {
+            onSurface: "black"
+        }
+    };
 
     return (
         <>
-            <Text>Welcome Back!</Text>
-            <Text variant="headlineLarge">Login Page</Text>
-            <Text>{email}</Text>
-            <Text>{password}</Text>
+            <Text variant="displayLarge" style={{ textAlign: "center" }} theme={blackTextTheme}>Welcome Back!</Text>
+            <Text variant="headlineSmall" theme={blackTextTheme}>Login</Text>
             <TextInput
                 placeholder="Email"
                 value={email}

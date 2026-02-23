@@ -1,6 +1,7 @@
 import AppContext from "@/app/context/AppContext";
 import sharedStyles from "@/styles/shared";
-import { useContext, useState } from "react";
+import { useIsFocused } from "@react-navigation/native";
+import { useContext, useEffect, useState } from "react";
 import { Button, Text, TextInput } from "react-native-paper";
 export function AddExpenseForm() {
     const jwt = useContext(AppContext).jwt;
@@ -8,6 +9,8 @@ export function AddExpenseForm() {
     const [category, setCategory] = useState("");
     const [amount, setAmount] = useState("");
     const [note, setNote] = useState("");
+    const isFocused = useIsFocused();
+    
     const handleFormSubmit = async () => {
         console.log("Form Submitted!");
         const url = "http://localhost:8000/api/v1/expenses";
@@ -42,6 +45,15 @@ export function AddExpenseForm() {
         }
     };
 
+    useEffect(() => {
+        console.log("AddExpenseForm focus changed. Is focused:", isFocused);
+        console.log("Resetting form state and error message.");
+        setErrorMessage("");
+        setAmount("");
+        setCategory("");
+        setNote("");
+    }, [isFocused]);
+    
     return (
         <>
             {errorMessage ? <Text style={{ color: "red" }}>{errorMessage}</Text> : null}
@@ -52,18 +64,24 @@ export function AddExpenseForm() {
                 label="Category"
                 value={category}
                 onChangeText={text => setCategory(text)}
+                style={{ marginBottom: 8 }}
+
             />
             <TextInput
                 label="Amount"
                 value={amount}
                 onChangeText={text => setAmount(text)}
+                style={{ marginBottom: 8 }}
+
             />
             <TextInput
                 label="Note"
                 value={note}
                 onChangeText={text => setNote(text)}
+                style={{ marginBottom: 16 }}
             />
-            <Button mode="contained" onPress={handleFormSubmit}>Submit</Button>
+            <Button theme={sharedStyles.greenButton}
+                mode="contained" onPress={handleFormSubmit}>Submit</Button>
         </>
     );
 }
