@@ -1,4 +1,5 @@
 # simple-budget
+
 Cross-Platform Budgeting Application
 
 A REST API for personal budgeting and financial tracking.
@@ -73,9 +74,10 @@ Flyway (database migrations)
 GitHub Actions (CI + documentation publishing)
 
 Setup Instructions
+
 1. Clone the Repository
-git clone https://github.com/jl7283/simple-budget.git
-cd simple-budget/backend
+   git clone https://github.com/jl7283/simple-budget.git
+   cd simple-budget/backend
 
 2. Create a Virtual Environment
 
@@ -84,7 +86,6 @@ PowerShell:
 python -m venv .venv
 .venv\Scripts\Activate
 pip install -r requirements.txt
-
 
 Mac/Linux:
 
@@ -100,7 +101,6 @@ DATABASE_URL=postgresql://budget_user:budget_pass@localhost:5432/budget_db
 SECRET_KEY=your-secret-key
 RUN_DB_INIT=false
 ACCESS_TOKEN_EXPIRE_MINUTES=30
-
 
 Notes:
 
@@ -128,7 +128,6 @@ If not using Flyway:
 
 RUN_DB_INIT=true
 
-
 The application will auto-create tables using SQLAlchemy.
 
 Running the Application Locally
@@ -137,16 +136,13 @@ From the backend directory:
 
 uvicorn app.main:app --reload
 
-
 The API will be available at:
 
 http://127.0.0.1:8000
 
-
 Swagger UI:
 
 http://127.0.0.1:8000/docs
-
 
 OpenAPI JSON:
 
@@ -157,7 +153,6 @@ Running Tests
 From the backend directory:
 
 pytest -q
-
 
 The test suite includes:
 
@@ -178,14 +173,14 @@ Example API Response
 Monthly summary response:
 
 {
-  "month": "2024-03",
-  "totalIncome": "3000.00",
-  "totalExpenses": "200.00",
-  "net": "2800.00",
-  "byCategory": {
-    "Groceries": "200.00"
-  },
-  "generatedAt": "2026-02-16T02:38:52Z"
+"month": "2024-03",
+"totalIncome": "3000.00",
+"totalExpenses": "200.00",
+"net": "2800.00",
+"byCategory": {
+"Groceries": "200.00"
+},
+"generatedAt": "2026-02-16T02:38:52Z"
 }
 
 CI/CD
@@ -216,22 +211,20 @@ Designed for containerization
 
 Project Structure
 backend/
-  app/
-    controllers/
-    services/
-    repositories/
-    models/
-    schemas/
-    utils/
-    main.py
-    config.py
-  scripts/
-    export_openapi.py
-  tests/
+app/
+controllers/
+services/
+repositories/
+models/
+schemas/
+utils/
+main.py
+config.py
+scripts/
+export_openapi.py
+tests/
 
 Status
 
 Backend API complete and production-structured.
 Frontend GUI pending implementation.
-
-
