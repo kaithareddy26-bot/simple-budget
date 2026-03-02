@@ -1,4 +1,6 @@
-## simple-budget backend
+# Cross-Platform Budgeting Application Backend
+
+## Quick Start (Docker Compose)
 
 Start (build + run):
 

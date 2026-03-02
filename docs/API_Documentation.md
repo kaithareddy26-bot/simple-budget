@@ -1,14 +1,14 @@
 # API Documentation
 
-Simple Budget REST API
+Cross-Platform Budgeting Application REST API
 
 ## Base URL
 
 Production:
-https://<your-backend-url>.onrender.com
+https://<your-backend-url>.onrender.com/api/v1
 
 Local:
-http://localhost:8000
+http://localhost:8000/api/v1
 
 ---
 
@@ -20,11 +20,13 @@ Header format:
 
 Authorization: Bearer <token>
 
+Authentication is required for all endpoints except registration and login.
+
 ---
 
 ## Endpoints
 
-### POST /register
+### POST /auth/register
 
 Creates a new user.
 
@@ -32,20 +34,30 @@ Request:
 
 {
 "email": "user@example.com",
-"password": "password123"
+"password": "securepassword123",
+"full_name": "Jane Doe"
 }
 
 Response:
 
 {
-"message": "User created successfully"
+"id": "550e8400-e29b-41d4-a716-446655440000",
+"email": "user@example.com",
+"full_name": "Jane Doe"
 }
 
 ---
 
-### POST /login
+### POST /auth/login
 
 Returns JWT token.
+
+Request:
+
+{
+"email": "user@example.com",
+"password": "securepassword123"
+}
 
 Response:
 
@@ -56,7 +68,7 @@ Response:
 
 ---
 
-### POST /budget
+### POST /budgets
 
 Creates a budget.
 
@@ -65,35 +77,101 @@ Requires authentication.
 Request:
 
 {
-"monthly_budget": 2000
+"month": "2024-03",
+"amount": 2000
+}
+
+Response:
+
+{
+"budgetId": "550e8400-e29b-41d4-a716-446655440000",
+"userId": "660e8400-e29b-41d4-a716-446655440000",
+"month": "2024-03",
+"totalAmount": 2000,
+"createdAt": "2024-03-01T00:00:00Z",
+"updatedAt": "2024-03-01T00:00:00Z"
 }
 
 ---
 
-### POST /expense
+### GET /budgets/current-month
+
+Returns the authenticated user's current month budget.
+
+Requires authentication.
+
+---
+
+### POST /expenses
 
 Adds an expense.
+
+Requires authentication.
 
 Request:
 
 {
 "amount": 100,
 "category": "Food",
-"description": "Groceries"
+"date": "2024-03-10",
+"note": "Groceries"
 }
 
 ---
 
-### GET /summary
+### POST /incomes
 
-Returns financial summary.
+Adds an income record.
+
+Requires authentication.
+
+Request:
+
+{
+"amount": 3000,
+"source": "Salary",
+"date": "2024-03-01"
+}
 
 Response:
 
 {
-"monthly_budget": 2000,
-"total_spent": 800,
-"remaining_balance": 1200
+"incomeId": "550e8400-e29b-41d4-a716-446655440000",
+"userId": "660e8400-e29b-41d4-a716-446655440000",
+"amount": 3000,
+"source": "Salary",
+"date": "2024-03-01",
+"createdAt": "2024-03-01T12:00:00Z"
+}
+
+---
+
+### GET /expenses/current-month
+
+Returns the authenticated user's expenses for the current month.
+
+Requires authentication.
+
+---
+
+### GET /reports/summary?month=YYYY-MM
+
+Returns financial summary.
+
+Requires authentication.
+
+Response:
+
+{
+"month": "2024-03",
+"totalIncome": 3000,
+"totalExpenses": 800,
+"net": 2200,
+"byCategory": {
+"Food": 300,
+"Transport": 500
+},
+"generatedAt": "2026-02-16T02:38:52Z"
 }
 
 ---
@@ -104,5 +182,7 @@ Response:
 | ---- | --------------------- |
 | 400  | Invalid request       |
 | 401  | Unauthorized          |
+| 403  | Forbidden             |
 | 404  | Not found             |
+| 409  | Conflict              |
 | 500  | Internal server error |

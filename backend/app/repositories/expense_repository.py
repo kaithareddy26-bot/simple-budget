@@ -9,42 +9,43 @@ from app.repositories.base_repository import BaseRepository
 
 class ExpenseRepository(BaseRepository[Expense]):
     """Expense repository implementation."""
-    
+
     def __init__(self, db: Session):
         super().__init__(db)
-    
+
     def create(self, entity: Expense) -> Expense:
         """Create a new expense record."""
         self.db.add(entity)
         self.db.commit()
         self.db.refresh(entity)
         return entity
-    
+
     def get_by_id(self, entity_id: UUID) -> Optional[Expense]:
         """Get expense by ID."""
         return self.db.query(Expense).filter(Expense.id == entity_id).first()
-    
+
     def get_by_user_and_date_range(
-        self,
-        user_id: UUID,
-        start_date: date,
-        end_date: date
+        self, user_id: UUID, start_date: date, end_date: date
     ) -> List[Expense]:
         """Get expenses by user ID and date range."""
-        return self.db.query(Expense).filter(
-            and_(
-                Expense.user_id == user_id,
-                Expense.date >= start_date,
-                Expense.date < end_date
+        return (
+            self.db.query(Expense)
+            .filter(
+                and_(
+                    Expense.user_id == user_id,
+                    Expense.date >= start_date,
+                    Expense.date < end_date,
+                )
             )
-        ).all()
-    
+            .all()
+        )
+
     def update(self, entity: Expense) -> Expense:
         """Update an expense record."""
         self.db.commit()
         self.db.refresh(entity)
         return entity
-    
+
     def delete(self, entity_id: UUID) -> bool:
         """Delete an expense record."""
         expense = self.get_by_id(entity_id)
@@ -53,10 +54,11 @@ class ExpenseRepository(BaseRepository[Expense]):
             self.db.commit()
             return True
         return False
-    
+
     def get_by_user_and_month(self, user_id: UUID, month: str) -> List[Expense]:
         """Get expenses by user ID and month (YYYY-MM)."""
         from datetime import datetime
+
         try:
             start_date = datetime.strptime(month, "%Y-%m").date()
             end_month = start_date.month % 12 + 1
@@ -64,5 +66,5 @@ class ExpenseRepository(BaseRepository[Expense]):
             end_date = date(end_year, end_month, 1)
         except ValueError:
             raise ValueError("Invalid month format. Expected YYYY-MM.")
-        
+
         return self.get_by_user_and_date_range(user_id, start_date, end_date)

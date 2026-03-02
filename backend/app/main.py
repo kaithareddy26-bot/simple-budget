@@ -10,7 +10,7 @@ from app.controllers import (
     budget_router,
     income_router,
     expense_router,
-    report_router
+    report_router,
 )
 from app.middleware.error_handler import (
     validation_exception_handler,
@@ -18,7 +18,7 @@ from app.middleware.error_handler import (
     integrity_error_handler,
     sqlalchemy_error_handler,
     general_exception_handler,
-    http_exception_handler
+    http_exception_handler,
 )
 
 settings = get_settings()
@@ -27,7 +27,7 @@ settings = get_settings()
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="Cross-Platform Budgeting Application API"
+    description="Cross-Platform Budgeting Application API",
 )
 
 app.add_middleware(
@@ -36,7 +36,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    expose_headers=["*"],
 )
 
 # Register exception handlers
@@ -67,7 +67,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": settings.APP_NAME,
-        "version": settings.APP_VERSION
+        "version": settings.APP_VERSION,
     }
 
 
@@ -77,5 +77,5 @@ async def root():
     return {
         "message": "Budgeting Application API",
         "version": settings.APP_VERSION,
-        "docs": "/docs"
+        "docs": "/docs",
     }

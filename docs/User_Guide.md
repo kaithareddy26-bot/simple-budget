@@ -1,8 +1,13 @@
 # User Guide
 
-Simple Budget – Cross-Platform Budgeting Application
+Cross-Platform Budgeting Application
 
-## 1. Introduction
+Current project status:
+
+- Backend API is complete and production-structured.
+- Frontend GUI is implemented for cross-platform usage.
+
+## Introduction
 
 Simple Budget is a cloud-based budgeting application that allows users to:
 
@@ -15,15 +20,20 @@ No installation is required for hosted deployment.
 
 ---
 
-## 2. Accessing the Application
+## Accessing the Application
 
 1. Open the deployed application URL.
 2. Register for a new account.
 3. Log in using your credentials.
 
+### Installation and Setup Notes
+
+- Hosted environment: no local installation is required.
+- Local/mobile development setup instructions are available in the developer guide.
+
 ---
 
-## 3. Registering a New Account
+## Registering a New Account
 
 1. Click "Register".
 2. Enter:
@@ -34,7 +44,7 @@ No installation is required for hosted deployment.
 
 ---
 
-## 4. Logging In
+## Logging In
 
 1. Click "Login".
 2. Enter email and password.
@@ -47,7 +57,7 @@ If login fails:
 
 ---
 
-## 5. Creating a Budget
+## Creating a Budget
 
 1. Navigate to Dashboard.
 2. Select "Create Budget".
@@ -58,7 +68,7 @@ The dashboard will update automatically.
 
 ---
 
-## 6. Adding an Expense
+## Adding an Expense
 
 1. Click "Add Expense".
 2. Enter:
@@ -74,7 +84,7 @@ The system automatically recalculates:
 
 ---
 
-## 7. Viewing Financial Summary
+## Viewing Financial Summary
 
 The dashboard displays:
 
@@ -84,13 +94,13 @@ The dashboard displays:
 
 ---
 
-## 8. Logging Out
+## Logging Out
 
 Click "Logout" to securely end your session.
 
 ---
 
-## 9. Troubleshooting
+## Troubleshooting
 
 | Issue                  | Solution              |
 | ---------------------- | --------------------- |
@@ -101,8 +111,68 @@ Click "Logout" to securely end your session.
 
 ---
 
-## 10. Known User Limitations
+## Known User Limitations
 
 - No offline functionality
 - No email password reset
 - No export to CSV feature
+
+---
+
+## Primary Task Screenshots
+
+Add screenshots for the following user flows when preparing release documentation:
+
+1. Registration page (before and after success)
+2. Login page (successful login)
+3. Dashboard with monthly budget visible
+4. Add Expense form (filled and submitted)
+5. Updated dashboard summary after expense submission
+
+Screenshot files:
+
+- `docs/images/user/register.png`
+- `docs/images/user/login.png`
+- `docs/images/user/dashboard-budget.png`
+- `docs/images/user/add-expense.png`
+- `docs/images/user/dashboard-summary.png`
+
+### Registration Page
+
+![Registration Page](images/user/register.png)
+
+### Login Page
+
+![Login Page](images/user/login.png)
+
+### Dashboard (Budget View)
+
+![Dashboard Budget View](images/user/dashboard-budget.png)
+
+### Add Expense Form
+
+![Add Expense Form](images/user/add-expense.png)
+
+### Dashboard (Updated Summary)
+
+![Dashboard Updated Summary](images/user/dashboard-summary.png)
+
+---
+
+## FAQ
+
+### Q: Do I need to install anything to use Simple Budget?
+
+A: No for hosted usage. Open the deployed URL, register, and log in.
+
+### Q: Why was I logged out?
+
+A: Authentication uses expiring JWT sessions. Log in again to continue.
+
+### Q: Why is my dashboard not updated immediately?
+
+A: Refresh the page and verify your latest expense save succeeded.
+
+### Q: Can I export my data?
+
+A: Not currently. CSV/PDF export is tracked as a future enhancement.

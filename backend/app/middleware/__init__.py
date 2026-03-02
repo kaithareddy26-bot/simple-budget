@@ -3,7 +3,7 @@ from app.middleware.error_handler import (
     value_error_handler,
     integrity_error_handler,
     sqlalchemy_error_handler,
-    general_exception_handler
+    general_exception_handler,
 )
 
 __all__ = [
@@ -11,5 +11,5 @@ __all__ = [
     "value_error_handler",
     "integrity_error_handler",
     "sqlalchemy_error_handler",
-    "general_exception_handler"
+    "general_exception_handler",
 ]

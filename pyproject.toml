@@ -1,0 +1,2 @@
+[tool.radon]
+exclude = ".venv,venv,build,dist,__pycache__"

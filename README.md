@@ -2,11 +2,11 @@
 
 Cross-Platform Budgeting Application
 
-A REST API for personal budgeting and financial tracking.
+A cross-platform budgeting application with a FastAPI backend and an implemented Expo frontend.
 
-Built with FastAPI and PostgreSQL, this backend provides secure authentication, budget management, income and expense tracking, and monthly financial reporting. It is designed to support a future web-based frontend GUI (not yet implemented).
+Built with FastAPI and PostgreSQL, this backend provides secure authentication, budget management, income and expense tracking, and monthly financial reporting. Frontend GUI is implemented for cross-platform usage.
 
-Live API Documentation
+## Live API Documentation
 
 Interactive API documentation is available at:
 
@@ -14,7 +14,7 @@ https://jl7283.github.io/simple-budget/api/
 
 This documentation is automatically generated from the OpenAPI specification via GitHub Actions.
 
-Features
+## Key Features
 
 Secure user registration and JWT authentication
 
@@ -30,7 +30,7 @@ Standardized error envelope
 
 Versioned database migration strategy
 
-Architecture
+## Architecture
 
 The application follows a layered architecture:
 
@@ -53,7 +53,7 @@ Centralized error handling
 
 Deterministic unit testing
 
-Technology Stack
+## Technology Stack
 
 Python 3.12
 
@@ -73,7 +73,7 @@ Flyway (database migrations)
 
 GitHub Actions (CI + documentation publishing)
 
-Setup Instructions
+## Quick Start
 
 1. Clone the Repository
    git clone https://github.com/jl7283/simple-budget.git
@@ -93,7 +93,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-Environment Configuration
+### Environment Configuration
 
 Create a .env file inside the backend directory:
 
@@ -108,7 +108,7 @@ RUN_DB_INIT=false is recommended when using Flyway migrations.
 
 Set RUN_DB_INIT=true only for local rapid development without migrations.
 
-Database Setup
+### Database Setup
 
 Ensure PostgreSQL is running locally.
 
@@ -116,13 +116,13 @@ Create the database:
 
 createdb budget_db
 
-Using Flyway (Recommended)
+#### Using Flyway (Recommended)
 
 Run migrations:
 
 flyway migrate
 
-Development Mode (Optional)
+### Development Mode (Optional)
 
 If not using Flyway:
 
@@ -130,7 +130,7 @@ RUN_DB_INIT=true
 
 The application will auto-create tables using SQLAlchemy.
 
-Running the Application Locally
+## Run Locally
 
 From the backend directory:
 
@@ -148,27 +148,43 @@ OpenAPI JSON:
 
 http://127.0.0.1:8000/openapi.json
 
-Running Tests
+## Running Tests
 
-From the backend directory:
+Backend tests (from the backend directory):
 
 pytest -q
 
-The test suite includes:
+Backend test suite includes:
 
-AuthService validation and credential checks
+- [AuthService tests](backend/tests/test_auth_service.py): validates authentication flows and credential handling.
+- [BudgetService tests](backend/tests/test_budget_service.py): verifies budget business rule enforcement.
+- [ExpenseService tests](backend/tests/test_expense_service.py): validates expense input and service behavior.
+- [IncomeService tests](backend/tests/test_income_service.py): validates income input and service behavior.
+- [ReportService tests](backend/tests/test_report_service.py): verifies month boundary rules and reporting contract behavior.
 
-BudgetService business rule enforcement
+Frontend tests (from the mobile directory):
 
-Income and Expense validation
+Prerequisite (run once or after dependency changes):
 
-ReportService month boundary validation
+npm install
 
-Error contract verification
+npm test
+
+Frontend coverage report (from the mobile directory):
+
+npm test -- --coverage
+
+Frontend test suite includes:
+
+- [AddExpenseForm tests](mobile/__tests__/AddExpenseForm.test.tsx): redirects when unauthenticated, validates budget prerequisites, and verifies successful expense submission flow.
+- [ExpenseCard tests](mobile/__tests__/ExpenseCard.test.tsx): renders category, amount, and note values correctly.
+- [LoginPage tests](mobile/__tests__/LoginPage.test.tsx): verifies successful login behavior (JWT + navigation) and failed login error handling.
+- [RegistrationPage tests](mobile/__tests__/RegistrationPage.test.tsx): verifies successful registration navigation and failed registration messaging.
+- [WelcomePage tests](mobile/__tests__/WelcomePage.test.tsx): covers unauthenticated redirect, budget setup validation, budget creation, and current-month summary rendering.
 
 All tests should pass before committing changes.
 
-Example API Response
+## Example API Response
 
 Monthly summary response:
 
@@ -183,7 +199,7 @@ Monthly summary response:
 "generatedAt": "2026-02-16T02:38:52Z"
 }
 
-CI/CD
+## CI/CD
 
 GitHub Actions provides:
 
@@ -197,7 +213,7 @@ API documentation is published at:
 
 https://jl7283.github.io/simple-budget/api/
 
-Deployment Considerations
+## Deployment Considerations
 
 Environment-driven configuration
 
@@ -209,7 +225,7 @@ JWT-based authentication
 
 Designed for containerization
 
-Project Structure
+## Project Structure
 backend/
 app/
 controllers/
@@ -224,7 +240,7 @@ scripts/
 export_openapi.py
 tests/
 
-Status
+## Status
 
 Backend API complete and production-structured.
 Frontend MVP implementation completed.
