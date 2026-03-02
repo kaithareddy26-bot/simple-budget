@@ -9,5 +9,5 @@ __all__ = [
     "BudgetService",
     "IncomeService",
     "ExpenseService",
-    "ReportService"
+    "ReportService",
 ]

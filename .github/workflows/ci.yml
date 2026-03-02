@@ -7,7 +7,30 @@ on:
     branches: [ "main" ]
 
 jobs:
-  test:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/ci.yml'
+            mobile:
+              - 'mobile/**'
+              - '.github/workflows/ci.yml'
+
+  backend-tests:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
 
     services:
@@ -35,17 +58,49 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # --------------------
+      # Backend (Python)
+      # --------------------
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
 
-      - name: Install dependencies
+      - name: Install backend dependencies
+        working-directory: backend
         run: |
-          cd backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tests
+      - name: Run backend tests
+        working-directory: backend
         run: |
           pytest -q
+
+  mobile-tests:
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: |
+          npm ci
+
+      - name: Run mobile tests
+        working-directory: mobile
+        run: |
+          npm test -- --ci --runInBand

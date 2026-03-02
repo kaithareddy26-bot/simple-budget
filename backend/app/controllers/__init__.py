@@ -9,5 +9,5 @@ __all__ = [
     "budget_router",
     "income_router",
     "expense_router",
-    "report_router"
+    "report_router",
 ]

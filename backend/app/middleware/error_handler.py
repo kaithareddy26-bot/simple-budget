@@ -60,8 +60,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     details = []
     for e in exc.errors():
         loc = e.get("loc", [])
-        # loc often looks like ("body", "month") / ("query","month") / ("path","budgetId")
-        field = ".".join(str(x) for x in loc if x not in ("body", "query", "path")) or None
+        # loc often looks like ("body", "month") / ("query", "month") /
+        # ("path", "budgetId")
+        field = (
+            ".".join(str(x) for x in loc if x not in ("body", "query", "path")) or None
+        )
         details.append({"field": field, "issue": e.get("msg", "Invalid value")})
 
     payload = _week4_payload(
@@ -73,7 +76,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
     logger.warning(f"Validation error on {request.url.path}: {details}")
-    return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=payload)
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content=payload,
+    )
 
 
 async def value_error_handler(request: Request, exc: ValueError):
@@ -84,7 +90,9 @@ async def value_error_handler(request: Request, exc: ValueError):
     if code.startswith("AUTH-"):
         if code == ErrorCodes.AUTH_INVALID_CREDENTIALS:
             status_code = status.HTTP_401_UNAUTHORIZED
-        elif code == getattr(ErrorCodes, "AUTH_UNAUTHORIZED", None) or code == getattr(ErrorCodes, "AUTH_FORBIDDEN", None):
+        elif code == getattr(ErrorCodes, "AUTH_UNAUTHORIZED", None) or code == getattr(
+            ErrorCodes, "AUTH_FORBIDDEN", None
+        ):
             status_code = status.HTTP_403_FORBIDDEN
         else:
             status_code = status.HTTP_401_UNAUTHORIZED
@@ -167,7 +175,9 @@ async def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError):
         message="Database error occurred",
     )
     logger.error(f"Database error: {str(exc)}")
-    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=payload)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=payload
+    )
 
 
 async def general_exception_handler(request: Request, exc: Exception):
@@ -179,7 +189,10 @@ async def general_exception_handler(request: Request, exc: Exception):
         message="Internal server error",
     )
     logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=payload)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=payload
+    )
+
 
 async def http_exception_handler(request: Request, exc: HTTPException):
     """
@@ -193,7 +206,9 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         error_code = ErrorCodes.AUTH_INVALID_TOKEN  # AUTH-001 after your remap
         message = "Missing or invalid token"
     elif status_code == status.HTTP_403_FORBIDDEN:
-        error_code = getattr(ErrorCodes, "AUTH_UNAUTHORIZED", ErrorCodes.AUTH_INVALID_TOKEN)
+        error_code = getattr(
+            ErrorCodes, "AUTH_UNAUTHORIZED", ErrorCodes.AUTH_INVALID_TOKEN
+        )
         message = str(exc.detail)
     else:
         error_code = ErrorCodes.SYS_INTERNAL_ERROR

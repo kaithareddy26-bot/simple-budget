@@ -23,19 +23,19 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(user_id: UUID, email: str) -> str:
     """Create a JWT access token."""
     expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode = {
-        "sub": str(user_id),
-        "email": email,
-        "exp": expire
-    }
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    to_encode = {"sub": str(user_id), "email": email, "exp": expire}
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
     return encoded_jwt
 
 
 def decode_access_token(token: str) -> Optional[dict]:
     """Decode and validate a JWT access token."""
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         return payload
     except JWTError:
         return None

@@ -15,17 +15,19 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
     responses={
         200: {"description": "Monthly summary generated successfully"},
         400: {"model": ErrorResponse, "description": "Invalid month format"},
-        401: {"model": ErrorResponse, "description": "Unauthorized"}
-    }
+        401: {"model": ErrorResponse, "description": "Unauthorized"},
+    },
 )
 async def get_monthly_summary(
-    month: str = Query(..., description="Month in YYYY-MM format", regex=r"^\d{4}-\d{2}$"),
+    month: str = Query(
+        ..., description="Month in YYYY-MM format", regex=r"^\d{4}-\d{2}$"
+    ),
     current_user: TokenData = Depends(get_current_user),
-    report_service: ReportService = Depends(get_report_service)
+    report_service: ReportService = Depends(get_report_service),
 ):
     """
     Generate monthly summary report.
-    
+
     Returns aggregated financial data for the specified month including:
     - Total income
     - Total expenses
@@ -33,15 +35,14 @@ async def get_monthly_summary(
     - Expenses grouped by category
     """
     summary = report_service.get_monthly_summary(
-        user_id=current_user.user_id,
-        month=month
+        user_id=current_user.user_id, month=month
     )
-    
+
     return MonthlySummaryResponse(
         month=summary["month"],
         total_income=summary["total_income"],
         total_expenses=summary["total_expenses"],
         net_balance=summary["net_balance"],
         expenses_by_category=summary["expenses_by_category"],
-        generated_at=report_service.utc_now()
+        generated_at=report_service.utc_now(),
     )
