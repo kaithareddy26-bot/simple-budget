@@ -9,6 +9,8 @@ Simple Budget is built using:
 Frontend:
 
 - React
+- React Native
+- Expo
 - Axios (API communication)
 
 Backend:
@@ -105,7 +107,7 @@ npm install
 npm start
 
 Frontend runs at:
-http://localhost:3000
+http://localhost:8080
 
 ---
 
