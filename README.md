@@ -85,12 +85,16 @@ PowerShell:
 
 python -m venv .venv
 .venv\Scripts\Activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
 Mac/Linux:
 
 python3 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements-dev.txt
+
+For runtime-only installs (for example, production containers), use:
+
 pip install -r requirements.txt
 
 ### Environment Configuration

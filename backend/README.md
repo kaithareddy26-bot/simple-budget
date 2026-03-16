@@ -2,6 +2,11 @@
 
 ## Quick Start (Docker Compose)
 
+Dependency files:
+
+- `requirements.txt`: runtime dependencies for app containers.
+- `requirements-dev.txt`: test and development dependencies (extends `requirements.txt`).
+
 Start (build + run):
 
 ```bash
