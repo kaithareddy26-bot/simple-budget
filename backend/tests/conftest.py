@@ -243,16 +243,6 @@ def client(service_mocks):
 
 
 @pytest.fixture
-def apply_auth_override(token_data):
-    def _apply(user=None):
-        current = user or token_data
-        app.dependency_overrides[get_current_user] = lambda: current
-        return current
-
-    return _apply
-
-
-@pytest.fixture
 def auth_client(token_data):
     """Authenticated client with all services mocked for testing protected endpoints."""
     mock_auth_service = Mock()
