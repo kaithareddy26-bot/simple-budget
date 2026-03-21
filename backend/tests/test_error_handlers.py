@@ -1,22 +1,42 @@
 """
-Auth failure, error handling consistency, and failure scenario tests.
+Error handling and dependency path tests.
 
-Sprint 1 gap closure:
-  - Every protected endpoint must return 401 with correct error shape
-    when token is missing or invalid.
-  - The error envelope must be consistent across all failure types.
-  - Simulated DB errors and edge-case inputs must be handled gracefully.
+Consolidated test suite covering:
+  - Middleware error handlers (validation, ValueError, IntegrityError, SQLAlchemy, general, HTTP)
+  - Authentication failures (missing/invalid tokens on protected endpoints)
+  - Error envelope consistency (Week-4 specification shape on all errors)
+  - Failure scenarios (DB errors, malformed data, edge cases)
+  - Token dependency validation (get_current_user error paths)
 
-Commit: test: add auth failure, error-handling consistency, and failure scenario tests
+Tests validate the error handling chain from exception through HTTP response,
+and auth dependency token validation paths.
+
+Merged from: test_error_handling.py + error/dependency tests from test_error_and_dependencies.py
 """
 
+import json
 import pytest
 from unittest.mock import patch, Mock
 from uuid import uuid4
+from datetime import date as date_type
+
+from fastapi import HTTPException
+from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from starlette.requests import Request
 
 from app.main import app
 from app.dependencies import get_current_user
+import app.dependencies as dependencies
 from app.schemas.error_schemas import ErrorCodes
+from app.middleware.error_handler import (
+    general_exception_handler,
+    http_exception_handler,
+    integrity_error_handler,
+    sqlalchemy_error_handler,
+    validation_exception_handler,
+    value_error_handler,
+)
 from tests.conftest import (
     make_user,
     make_expense,
@@ -27,6 +47,243 @@ from tests.conftest import (
     assert_error_shape,
     assert_unauthorized,
 )
+
+
+# ===========================================================================
+# MIDDLEWARE ERROR HANDLER TESTS
+# ===========================================================================
+
+
+def _make_request(path: str = "/api/v1/test") -> Request:
+    """Helper to create a mock Request object for error handler testing."""
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "method": "GET",
+        "path": path,
+        "raw_path": path.encode(),
+        "query_string": b"",
+        "headers": [],
+        "client": ("testclient", 50000),
+        "server": ("testserver", 80),
+        "scheme": "http",
+    }
+    return Request(scope)
+
+
+@pytest.mark.asyncio
+async def test_validation_exception_handler_returns_week4_shape():
+    """Pydantic validation error returns proper Week-4 envelope."""
+    request = _make_request("/api/v1/reports/summary")
+    exc = RequestValidationError(
+        [
+            {
+                "loc": ("query", "month"),
+                "msg": "String should match pattern",
+                "type": "string_pattern_mismatch",
+            },
+            {
+                "loc": ("body", "amount"),
+                "msg": "Input should be greater than 0",
+                "type": "greater_than",
+            },
+        ]
+    )
+
+    response = await validation_exception_handler(request, exc)
+
+    assert response.status_code == 400
+    body = json.loads(response.body)
+    assert body["errorCode"] == ErrorCodes.VAL_INVALID_INPUT
+    assert body["path"] == "/api/v1/reports/summary"
+    assert body["status"] == 400
+    assert len(body["details"]) == 2
+
+
+@pytest.mark.parametrize(
+    "message,expected_status,expected_code",
+    [
+        ("AUTH-004:Invalid credentials", 401, "AUTH-004"),
+        ("USR-002:User not found", 404, "USR-002"),
+        ("BUD-004:Not your budget", 403, "BUD-004"),
+        ("INC-004:Invalid source", 400, "INC-004"),
+        ("EXP-001:Expense not found", 404, "EXP-001"),
+        ("RPT-001:Invalid month", 400, "RPT-001"),
+        (
+            "Unrecognized domain failure",
+            500,
+            ErrorCodes.SYS_INTERNAL_ERROR,
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_value_error_handler_maps_status_codes(
+    message, expected_status, expected_code
+):
+    """ValueError with error code prefix maps to correct HTTP status."""
+    request = _make_request()
+
+    response = await value_error_handler(request, ValueError(message))
+
+    assert response.status_code == expected_status
+    body = json.loads(response.body)
+    assert body["errorCode"] == expected_code
+    assert body["status"] == expected_status
+
+
+@pytest.mark.asyncio
+async def test_integrity_error_handler_maps_conflict():
+    """DB IntegrityError maps to 409 Conflict."""
+    request = _make_request()
+    exc = IntegrityError("INSERT ...", {"id": "1"}, Exception("duplicate key"))
+
+    response = await integrity_error_handler(request, exc)
+
+    assert response.status_code == 409
+    body = json.loads(response.body)
+    assert body["errorCode"] == ErrorCodes.SYS_DATABASE_ERROR
+    assert body["error"] == "Conflict"
+
+
+@pytest.mark.asyncio
+async def test_sqlalchemy_error_handler_maps_internal_error():
+    """SQLAlchemy error maps to 500."""
+    request = _make_request()
+    response = await sqlalchemy_error_handler(request, SQLAlchemyError("db offline"))
+
+    assert response.status_code == 500
+    body = json.loads(response.body)
+    assert body["errorCode"] == ErrorCodes.SYS_DATABASE_ERROR
+    assert body["error"] == "Internal Server Error"
+
+
+@pytest.mark.asyncio
+async def test_general_exception_handler_maps_internal_error():
+    """Unhandled exception maps to 500."""
+    request = _make_request("/api/v1/expenses")
+    response = await general_exception_handler(request, RuntimeError("boom"))
+
+    assert response.status_code == 500
+    body = json.loads(response.body)
+    assert body["errorCode"] == ErrorCodes.SYS_INTERNAL_ERROR
+    assert body["message"] == "Internal server error"
+    assert body["path"] == "/api/v1/expenses"
+
+
+@pytest.mark.asyncio
+async def test_http_exception_handler_maps_401_and_403():
+    """HTTPException 401/403 map to proper error codes."""
+    request = _make_request("/api/v1/budgets")
+
+    response_401 = await http_exception_handler(
+        request,
+        HTTPException(status_code=401, detail="Not authenticated"),
+    )
+    body_401 = json.loads(response_401.body)
+    assert response_401.status_code == 401
+    assert body_401["errorCode"] == ErrorCodes.AUTH_INVALID_TOKEN
+    assert body_401["message"] == "Missing or invalid token"
+
+    response_403 = await http_exception_handler(
+        request,
+        HTTPException(status_code=403, detail="Forbidden"),
+    )
+    body_403 = json.loads(response_403.body)
+    assert response_403.status_code == 403
+    assert body_403["errorCode"] == ErrorCodes.AUTH_UNAUTHORIZED
+    assert body_403["message"] == "Forbidden"
+
+
+# ===========================================================================
+# DEPENDENCY: get_current_user TOKEN VALIDATION TESTS
+# ===========================================================================
+
+
+def test_get_current_user_invalid_token(monkeypatch):
+    """Invalid/expired token raises 401 AUTH-001."""
+    monkeypatch.setattr(dependencies, "decode_access_token", lambda _: None)
+    auth_service = type("AuthServiceStub", (), {"get_user_by_id": lambda *_: None})()
+
+    with pytest.raises(HTTPException) as exc_info:
+        dependencies.get_current_user(token="not-a-token", auth_service=auth_service)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Missing or invalid token"
+
+
+def test_get_current_user_invalid_uuid_payload(monkeypatch):
+    """Token payload with malformed UUID in 'sub' raises 401."""
+    monkeypatch.setattr(
+        dependencies,
+        "decode_access_token",
+        lambda _: {"sub": "not-a-uuid", "email": "tester@example.com"},
+    )
+    auth_service = type("AuthServiceStub", (), {"get_user_by_id": lambda *_: None})()
+
+    with pytest.raises(HTTPException) as exc_info:
+        dependencies.get_current_user(token="valid-looking", auth_service=auth_service)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Invalid token format"
+
+
+def test_get_current_user_missing_payload_fields(monkeypatch):
+    """Token missing 'email' field raises 401."""
+    monkeypatch.setattr(
+        dependencies,
+        "decode_access_token",
+        lambda _: {"sub": str(uuid4())},
+    )
+    auth_service = type("AuthServiceStub", (), {"get_user_by_id": lambda *_: None})()
+
+    with pytest.raises(HTTPException) as exc_info:
+        dependencies.get_current_user(token="valid-looking", auth_service=auth_service)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Invalid token payload"
+
+
+def test_get_current_user_user_not_found(monkeypatch):
+    """Valid token but user not in DB raises 401."""
+    user_id = uuid4()
+    monkeypatch.setattr(
+        dependencies,
+        "decode_access_token",
+        lambda _: {"sub": str(user_id), "email": "tester@example.com"},
+    )
+    auth_service = type("AuthServiceStub", (), {"get_user_by_id": lambda *_: None})()
+
+    with pytest.raises(HTTPException) as exc_info:
+        dependencies.get_current_user(token="valid-looking", auth_service=auth_service)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "User not found"
+
+
+def test_get_current_user_success(monkeypatch):
+    """Valid token and user in DB returns TokenData."""
+    user_id = uuid4()
+    monkeypatch.setattr(
+        dependencies,
+        "decode_access_token",
+        lambda _: {"sub": str(user_id), "email": "tester@example.com"},
+    )
+    user = SimpleUser(id=user_id, email="tester@example.com")
+    auth_service = type("AuthServiceStub", (), {"get_user_by_id": lambda *_: user})()
+
+    token_data = dependencies.get_current_user(
+        token="valid-looking", auth_service=auth_service
+    )
+
+    assert token_data.user_id == user_id
+    assert token_data.email == "tester@example.com"
+
+
+class SimpleUser:
+    """Stub user object for dependency testing."""
+    def __init__(self, id, email):
+        self.id = id
+        self.email = email
 
 
 # ===========================================================================
@@ -234,8 +491,6 @@ class TestFailureScenarios:
 
     def test_db_integrity_error_returns_409(self, auth_client):
         """IntegrityError from DB layer → 409 with SYS-002."""
-        from sqlalchemy.exc import IntegrityError
-
         client = auth_client["client"]
         svc = auth_client["expense_service"]
         svc.add_expense.side_effect = IntegrityError(
@@ -252,8 +507,6 @@ class TestFailureScenarios:
 
     def test_db_sqlalchemy_error_returns_500(self, auth_client):
         """General SQLAlchemyError → 500 with SYS-002."""
-        from sqlalchemy.exc import SQLAlchemyError
-
         client = auth_client["client"]
         svc = auth_client["expense_service"]
         svc.add_expense.side_effect = SQLAlchemyError("connection lost")

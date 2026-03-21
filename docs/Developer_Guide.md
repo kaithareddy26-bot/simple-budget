@@ -144,6 +144,12 @@ http://localhost:8080
 Backend:
 pytest -q
 
+### Current Backend Test Structure
+
+- `backend/tests/test_http_controllers.py`: consolidated HTTP/controller tests for endpoint contracts, validation, protected routes, and controller-level error paths.
+- `backend/tests/test_error_handlers.py`: consolidated middleware and dependency error-path tests, including error code mapping and auth token edge cases.
+- `backend/tests/test_auth_service.py`, `backend/tests/test_budget_service.py`, `backend/tests/test_expense_service.py`, `backend/tests/test_income_service.py`, `backend/tests/test_report_service.py`: service-layer business logic tests.
+
 Frontend:
 
 npm install

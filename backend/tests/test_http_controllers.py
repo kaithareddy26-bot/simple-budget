@@ -1,17 +1,24 @@
 """
-Controller-layer tests: API endpoint behaviour (success + validation + auth).
+HTTP Controller-layer tests: API endpoint behaviour across all controllers.
 
-These tests exercise FastAPI routes directly through TestClient.
+Consolidated test suite covering:
+  - Success paths (correct HTTP status and response shape)
+  - Validation errors (malformed request bodies)
+  - Authentication failures (missing/invalid tokens on protected endpoints)
+  - Service-layer errors (business logic failures mapped to HTTP status)
+  - Error envelope consistency (Week-4 specification shape on all errors)
+
+Tests exercise FastAPI routes directly through TestClient.
 Service dependencies are mocked — we are testing HTTP wiring, not business logic.
 
-Commit: test: add API endpoint tests for all controllers (success + validation)
+Merged from: test_controllers.py + unique tests from test_api_controllers.py
 """
 
 import pytest
 from decimal import Decimal
 from uuid import uuid4
-from unittest.mock import patch
 
+from app.main import app
 from app.schemas.error_schemas import ErrorCodes
 from tests.conftest import (
     make_user,
@@ -26,6 +33,31 @@ from tests.conftest import (
     assert_validation_error,
     assert_unauthorized,
 )
+
+
+# ===========================================================================
+# HEALTH / ROOT ENDPOINTS
+# ===========================================================================
+
+
+def test_health_endpoint(client):
+    """GET /health returns service health status."""
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "healthy"
+    assert "version" in data
+
+
+def test_root_endpoint(client):
+    """GET / returns API information."""
+    response = client.get("/")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["message"] == "Budgeting Application API"
+    assert data["docs"] == "/docs"
 
 
 # ===========================================================================

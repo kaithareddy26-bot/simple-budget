@@ -178,6 +178,22 @@ Response:
 
 ## Error Codes
 
+Error responses include both:
+
+- HTTP status code (for transport-level semantics)
+- Domain `errorCode` field in the JSON envelope (for application-level handling)
+
+Typical error envelope:
+
+{
+"timestamp": "2026-03-21T12:00:00Z",
+"status": 401,
+"error": "Unauthorized",
+"errorCode": "AUTH-001",
+"message": "Missing or invalid token",
+"path": "/api/v1/expenses/current-month"
+}
+
 | Code | Meaning               |
 | ---- | --------------------- |
 | 400  | Invalid request       |

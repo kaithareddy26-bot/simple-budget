@@ -160,11 +160,19 @@ pytest -q
 
 Backend test suite includes:
 
+- [HTTP controller integration tests](backend/tests/test_http_controllers.py): consolidated endpoint-level coverage for auth, budgets, expenses, incomes, reports, and health/root routes.
+- [Error handling and auth-dependency tests](backend/tests/test_error_handlers.py): consolidated coverage for middleware error mapping, error-envelope consistency, auth failure paths, and token dependency validation.
 - [AuthService tests](backend/tests/test_auth_service.py): validates authentication flows and credential handling.
 - [BudgetService tests](backend/tests/test_budget_service.py): verifies budget business rule enforcement.
 - [ExpenseService tests](backend/tests/test_expense_service.py): validates expense input and service behavior.
 - [IncomeService tests](backend/tests/test_income_service.py): validates income input and service behavior.
 - [ReportService tests](backend/tests/test_report_service.py): verifies month boundary rules and reporting contract behavior.
+
+### Current Backend Test Structure
+
+- [backend/tests/test_http_controllers.py](backend/tests/test_http_controllers.py): route/controller tests (HTTP contracts, validation, protected endpoints, and controller error paths).
+- [backend/tests/test_error_handlers.py](backend/tests/test_error_handlers.py): middleware/dependency error handling tests (error code mapping, envelope shape, and auth token edge cases).
+- [backend/tests/test_auth_service.py](backend/tests/test_auth_service.py), [backend/tests/test_budget_service.py](backend/tests/test_budget_service.py), [backend/tests/test_expense_service.py](backend/tests/test_expense_service.py), [backend/tests/test_income_service.py](backend/tests/test_income_service.py), [backend/tests/test_report_service.py](backend/tests/test_report_service.py): service-layer business logic tests.
 
 Frontend tests (from the mobile directory):
 

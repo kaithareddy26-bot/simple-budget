@@ -12,7 +12,7 @@ None currently known.
 
 1. No rate limiting on API endpoints.
 2. No password reset email functionality.
-3. Limited production monitoring/logging.
+3. No centralized/structured production observability stack.
 
 Workarounds:
 
