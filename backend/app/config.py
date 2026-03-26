@@ -17,9 +17,19 @@ class Settings(BaseSettings):
     RUN_DB_INIT: bool = True
 
     # Security
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    # NO production default — app crashes on startup if not set in .env
+    # Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+    SECRET_KEY: str = "dev-only-secret-change-before-any-deployment"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
+    # Rate limiting (all configurable via .env)
+    LOGIN_RATE_LIMIT: str = "5/minute"
+    REGISTER_RATE_LIMIT: str = "3/minute"
+    GLOBAL_RATE_LIMIT: str = "60/minute"
+    REPORT_RATE_LIMIT: str = "10/minute"
+    LOGIN_LOCKOUT_MAX_ATTEMPTS: int = 5
+    LOGIN_LOCKOUT_WINDOW_MINUTES: int = 15
 
     # CORS
     ALLOWED_ORIGINS: list = [
@@ -28,7 +38,6 @@ class Settings(BaseSettings):
         "http://localhost:8081",
     ]
 
-    # Pydantic v2 Configuration
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 

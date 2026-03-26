@@ -1,8 +1,12 @@
-from fastapi import FastAPI
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
 from app.config import get_settings
 from app.models import init_db
 from app.controllers import (
@@ -23,23 +27,39 @@ from app.middleware.error_handler import (
 
 settings = get_settings()
 
-# Create FastAPI application
+# ---------------------------------------------------------------------------
+# Rate limiter — uses client IP by default.
+# default_limits applies to every route that doesn't have its own @limiter.limit
+# Production upgrade: swap memory:// for redis://localhost:6379 in .env
+# ---------------------------------------------------------------------------
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=[settings.GLOBAL_RATE_LIMIT],
+)
+
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description="Cross-Platform Budgeting Application API",
 )
 
+# Attach limiter to app state so route decorators can reach it
+app.state.limiter = limiter
+
+# SlowAPI middleware must be added BEFORE other middleware
+app.add_middleware(SlowAPIMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
+    allow_methods=["GET", "POST", "PUT"],       # only what the API uses
+    allow_headers=["Authorization", "Content-Type"],
+    expose_headers=[],
 )
 
-# Register exception handlers
+# Exception handlers
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(ValueError, value_error_handler)
 app.add_exception_handler(IntegrityError, integrity_error_handler)
@@ -47,7 +67,7 @@ app.add_exception_handler(SQLAlchemyError, sqlalchemy_error_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)
 
-# Register routers
+# Routers
 app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
 app.include_router(budget_router, prefix=settings.API_V1_PREFIX)
 app.include_router(income_router, prefix=settings.API_V1_PREFIX)

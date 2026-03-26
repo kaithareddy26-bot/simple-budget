@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
 from app.schemas.auth_schemas import (
     UserRegisterRequest,
     UserRegisterResponse,
@@ -8,7 +11,10 @@ from app.schemas.auth_schemas import (
 from app.schemas.error_schemas import ErrorResponse
 from app.services.auth_service import AuthService
 from app.dependencies import get_auth_service
+from app.config import get_settings
 
+settings = get_settings()
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
@@ -20,21 +26,24 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
         201: {"description": "User successfully registered"},
         400: {"model": ErrorResponse, "description": "Validation error"},
         409: {"model": ErrorResponse, "description": "User already exists"},
+        429: {"description": "Too many registration attempts"},
     },
 )
+@limiter.limit(settings.REGISTER_RATE_LIMIT)
 async def register(
-    request: UserRegisterRequest, auth_service: AuthService = Depends(get_auth_service)
+    request: Request,
+    body: UserRegisterRequest,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Register a new user.
 
-    Creates a new user account with the provided credentials.
-    Password will be securely hashed before storage.
+    Rate limited to 3 requests per minute per IP to prevent
+    registration spam and account enumeration.
     """
     user = auth_service.register_user(
-        email=request.email, password=request.password, full_name=request.full_name
+        email=body.email, password=body.password, full_name=body.full_name
     )
-
     return UserRegisterResponse(id=user.id, email=user.email, full_name=user.full_name)
 
 
@@ -44,20 +53,25 @@ async def register(
     status_code=status.HTTP_200_OK,
     responses={
         200: {"description": "Login successful, returns JWT token"},
-        401: {"model": ErrorResponse, "description": "Invalid credentials"},
+        401: {"model": ErrorResponse, "description": "Invalid credentials or locked out"},
+        429: {"description": "Too many login attempts — back off and retry"},
     },
 )
+@limiter.limit(settings.LOGIN_RATE_LIMIT)
 async def login(
-    request: UserLoginRequest, auth_service: AuthService = Depends(get_auth_service)
+    request: Request,
+    body: UserLoginRequest,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Authenticate user and return JWT token.
 
-    Validates credentials and returns a JWT access token
-    that must be included in subsequent requests.
+    Rate limited to 5 requests per minute per IP (network-level).
+    Additionally, the service layer enforces a per-email lockout after
+    5 consecutive failures within a 15-minute window (application-level).
+    Both controls must be bypassed for a brute-force attack to succeed.
     """
     access_token = auth_service.login_user(
-        email=request.email, password=request.password
+        email=body.email, password=body.password
     )
-
     return UserLoginResponse(access_token=access_token, token_type="bearer")

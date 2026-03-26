@@ -17,3 +17,7 @@ coverage/
 
 # VS Code workspace settings
 .vscode/
+
+.env
+
+backend/.env
