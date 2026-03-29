@@ -50,7 +50,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://budget_user:budget_pass@localhost:5432/budget_db
-      SECRET_KEY: test-secret
+      SECRET_KEY: test-secret-key-for-ci-at-least-32-chars
       RUN_DB_INIT: "true"
       API_V1_PREFIX: /api/v1
 
@@ -80,6 +80,11 @@ jobs:
         working-directory: backend
         run: |
           pytest -q
+
+      - name: Run Epic 2 security and error consistency tests
+        working-directory: backend
+        run: |
+          pytest -q tests/test_security.py tests/test_error_handlers.py
 
   mobile-tests:
     needs: changes

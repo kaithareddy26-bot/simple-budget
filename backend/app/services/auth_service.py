@@ -1,7 +1,7 @@
 from uuid import UUID
 from typing import Optional
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.utils.security import hash_password, verify_password, create_access_token
@@ -27,7 +27,7 @@ def _check_lockout(email: str) -> None:
     Uses a sliding window: only attempts within the last
     LOGIN_LOCKOUT_WINDOW_MINUTES minutes count.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     window_start = now - timedelta(minutes=settings.LOGIN_LOCKOUT_WINDOW_MINUTES)
 
     # Prune attempts outside the current window
@@ -44,7 +44,7 @@ def _check_lockout(email: str) -> None:
 
 def _record_failure(email: str) -> None:
     """Record a failed login attempt for this email."""
-    _failed_attempts[email].append(datetime.utcnow())
+    _failed_attempts[email].append(datetime.now(timezone.utc))
 
 
 def _clear_failures(email: str) -> None:

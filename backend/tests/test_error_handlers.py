@@ -33,6 +33,7 @@ from app.middleware.error_handler import (
     general_exception_handler,
     http_exception_handler,
     integrity_error_handler,
+    rate_limit_exception_handler,
     sqlalchemy_error_handler,
     validation_exception_handler,
     value_error_handler,
@@ -192,6 +193,25 @@ async def test_http_exception_handler_maps_401_and_403():
     assert response_403.status_code == 403
     assert body_403["errorCode"] == ErrorCodes.AUTH_UNAUTHORIZED
     assert body_403["message"] == "Forbidden"
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_exception_handler_uses_week4_shape():
+    """Rate-limit exceptions should use standard envelope and SYS-003."""
+    from types import SimpleNamespace
+
+    request = _make_request("/api/v1/auth/login")
+    response = await rate_limit_exception_handler(
+        request,
+        SimpleNamespace(detail="5 per 1 minute"),
+    )
+
+    assert response.status_code == 429
+    body = json.loads(response.body)
+    assert body["status"] == 429
+    assert body["error"] == "Too Many Requests"
+    assert body["errorCode"] == ErrorCodes.SYS_RATE_LIMIT
+    assert body["path"] == "/api/v1/auth/login"
 
 
 # ===========================================================================

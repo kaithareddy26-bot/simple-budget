@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     RUN_DB_INIT: bool = True
 
     # Security
-    # NO production default — app crashes on startup if not set in .env
+    # Development fallback exists; override in .env for all non-local deployments
     # Generate with: python -c "import secrets; print(secrets.token_hex(32))"
     SECRET_KEY: str = "dev-only-secret-change-before-any-deployment"
     ALGORITHM: str = "HS256"

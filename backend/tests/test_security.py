@@ -16,7 +16,7 @@ Run with coverage:
 
 import pytest
 from unittest.mock import Mock, patch
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from tests.conftest import (
     make_user,
@@ -24,6 +24,7 @@ from tests.conftest import (
     assert_error_shape,
 )
 from app.schemas.error_schemas import ErrorCodes
+from app.config import get_settings
 
 
 # ===========================================================================
@@ -113,7 +114,7 @@ class TestLoginLockout:
         window_minutes = get_settings().LOGIN_LOCKOUT_WINDOW_MINUTES
 
         # Inject MAX_ATTEMPTS failures that are just outside the window
-        old_time = datetime.utcnow() - timedelta(minutes=window_minutes + 1)
+        old_time = datetime.now(timezone.utc) - timedelta(minutes=window_minutes + 1)
         svc_module._failed_attempts[self.email] = [old_time] * max_attempts
 
         # Next attempt should NOT be locked (old failures have expired)
@@ -171,37 +172,48 @@ class TestRateLimiting:
     """
 
     def test_login_rate_limit_returns_429_after_threshold(self, unauth_client):
-        """POST /auth/login allows N requests then returns 429."""
+        """POST /auth/login allows N requests, then N+1 returns 429."""
         client = unauth_client["client"]
         svc = unauth_client["auth_service"]
+        settings = get_settings()
+        limit = int(settings.LOGIN_RATE_LIMIT.split("/")[0])
+
         # Make every login attempt fail so we don't clear the counter
         svc.login_user.side_effect = ValueError(
             f"{ErrorCodes.AUTH_INVALID_CREDENTIALS}:Invalid email or password"
         )
 
-        responses = []
-        for _ in range(10):
+        # First N calls should not be 429.
+        for _ in range(limit):
             resp = client.post(
                 "/api/v1/auth/login",
                 json={"email": "test@example.com", "password": "wrong"},
             )
-            responses.append(resp.status_code)
+            assert resp.status_code == 401
 
-        # Should see at least one 429 in the list
-        assert 429 in responses, (
-            f"Expected a 429 after repeated login attempts, got: {responses}"
+        # N+1 must be rate-limited with standard envelope.
+        resp = client.post(
+            "/api/v1/auth/login",
+            json={"email": "test@example.com", "password": "wrong"},
         )
+        assert resp.status_code == 429
+        body = resp.json()
+        assert_error_shape(body, 429, ErrorCodes.SYS_RATE_LIMIT)
+        assert body["message"]
 
     def test_register_rate_limit_returns_429_after_threshold(self, unauth_client):
-        """POST /auth/register allows N requests then returns 429."""
+        """POST /auth/register allows N requests, then N+1 returns 429."""
         client = unauth_client["client"]
         svc = unauth_client["auth_service"]
+        settings = get_settings()
+        limit = int(settings.REGISTER_RATE_LIMIT.split("/")[0])
+
         svc.register_user.side_effect = ValueError(
             f"{ErrorCodes.USER_EXISTS}:Already exists"
         )
 
-        responses = []
-        for _ in range(10):
+        # First N calls should not be 429.
+        for _ in range(limit):
             resp = client.post(
                 "/api/v1/auth/register",
                 json={
@@ -210,11 +222,21 @@ class TestRateLimiting:
                     "full_name": "Spam User",
                 },
             )
-            responses.append(resp.status_code)
+            assert resp.status_code == 409
 
-        assert 429 in responses, (
-            f"Expected a 429 after repeated register attempts, got: {responses}"
+        # N+1 must be rate-limited with standard envelope.
+        resp = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "spam@example.com",
+                "password": "password123",
+                "full_name": "Spam User",
+            },
         )
+        assert resp.status_code == 429
+        body = resp.json()
+        assert_error_shape(body, 429, ErrorCodes.SYS_RATE_LIMIT)
+        assert body["message"]
 
     def test_health_endpoint_not_rate_limited(self, unauth_client):
         """GET /health should never return 429 — it has no rate limit decorator."""
