@@ -3,13 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from contextlib import asynccontextmanager
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import get_settings
 from app.models import init_db
+from app.rate_limiter import limiter
 from app.controllers import (
     auth_router,
     budget_router,
@@ -35,16 +34,6 @@ async def lifespan(_: FastAPI):
     """Initialize shared resources at app startup."""
     init_db()
     yield
-
-# ---------------------------------------------------------------------------
-# Rate limiter — uses client IP by default.
-# default_limits applies to every route that doesn't have its own @limiter.limit
-# Production upgrade: swap memory:// for redis://localhost:6379 in .env
-# ---------------------------------------------------------------------------
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=[settings.GLOBAL_RATE_LIMIT],
-)
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -83,7 +72,10 @@ app.include_router(budget_router, prefix=settings.API_V1_PREFIX)
 app.include_router(income_router, prefix=settings.API_V1_PREFIX)
 app.include_router(expense_router, prefix=settings.API_V1_PREFIX)
 app.include_router(report_router, prefix=settings.API_V1_PREFIX)
+
+
 @app.get("/health", tags=["Health"])
+@limiter.exempt
 async def health_check():
     """Health check endpoint."""
     return {

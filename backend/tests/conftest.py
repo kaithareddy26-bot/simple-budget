@@ -49,7 +49,7 @@ _CLIENT_HOST_COUNTER = count(11)
 def _next_client_host() -> str:
     # Use a unique client host per fixture invocation so rate-limit buckets
     # are isolated even if limiter state leaks across client contexts.
-    host_octet = next(_CLIENT_HOST_COUNTER)
+    host_octet = 1 + ((next(_CLIENT_HOST_COUNTER) - 1) % 254)
     return f"203.0.113.{host_octet}"
 
 

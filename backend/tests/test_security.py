@@ -15,6 +15,7 @@ Run with coverage:
 """
 
 import pytest
+import re
 from unittest.mock import Mock, patch
 from datetime import datetime, timedelta, timezone
 
@@ -25,6 +26,14 @@ from tests.conftest import (
 )
 from app.schemas.error_schemas import ErrorCodes
 from app.config import get_settings
+
+
+def _rate_limit_count(limit_value: str) -> int:
+    """Extract the request-count component from a SlowAPI/limits rate string."""
+    match = re.search(r"\d+", limit_value)
+    if not match:
+        raise ValueError(f"Could not parse rate-limit count from '{limit_value}'")
+    return int(match.group(0))
 
 
 # ===========================================================================
@@ -176,7 +185,7 @@ class TestRateLimiting:
         client = unauth_client["client"]
         svc = unauth_client["auth_service"]
         settings = get_settings()
-        limit = int(settings.LOGIN_RATE_LIMIT.split("/")[0])
+        limit = _rate_limit_count(settings.LOGIN_RATE_LIMIT)
 
         # Make every login attempt fail so we don't clear the counter
         svc.login_user.side_effect = ValueError(
@@ -206,7 +215,7 @@ class TestRateLimiting:
         client = unauth_client["client"]
         svc = unauth_client["auth_service"]
         settings = get_settings()
-        limit = int(settings.REGISTER_RATE_LIMIT.split("/")[0])
+        limit = _rate_limit_count(settings.REGISTER_RATE_LIMIT)
 
         svc.register_user.side_effect = ValueError(
             f"{ErrorCodes.USER_EXISTS}:Already exists"
@@ -239,9 +248,12 @@ class TestRateLimiting:
         assert body["message"]
 
     def test_health_endpoint_not_rate_limited(self, unauth_client):
-        """GET /health should never return 429 — it has no rate limit decorator."""
+        """GET /health should never return 429, even past global default limits."""
         client = unauth_client["client"]
-        for _ in range(20):
+        settings = get_settings()
+        over_limit = _rate_limit_count(settings.GLOBAL_RATE_LIMIT) + 10
+
+        for _ in range(over_limit):
             resp = client.get("/health")
             assert resp.status_code == 200, (
                 f"Health endpoint should not be rate limited, got {resp.status_code}"
