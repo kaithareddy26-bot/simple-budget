@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
+import os
 
 
 class Settings(BaseSettings):
@@ -17,13 +18,14 @@ class Settings(BaseSettings):
     RUN_DB_INIT: bool = True
 
     # Security
-    # NO production default — app crashes on startup if not set in .env
+    # Development fallback exists; override in .env for all non-local deployments
     # Generate with: python -c "import secrets; print(secrets.token_hex(32))"
     SECRET_KEY: str = "dev-only-secret-change-before-any-deployment"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # Rate limiting (all configurable via .env)
+    RATE_LIMIT_ENABLED: bool = True
     LOGIN_RATE_LIMIT: str = "5/minute"
     REGISTER_RATE_LIMIT: str = "3/minute"
     GLOBAL_RATE_LIMIT: str = "60/minute"
@@ -38,7 +40,10 @@ class Settings(BaseSettings):
         "http://localhost:8081",
     ]
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+    model_config = SettingsConfigDict(
+       env_file=os.getenv("ENV_FILE", ".env"),
+       case_sensitive=True
+    )
 
 
 @lru_cache()
