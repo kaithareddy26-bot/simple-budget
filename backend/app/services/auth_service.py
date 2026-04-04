@@ -1,5 +1,6 @@
 from uuid import UUID
 from typing import Optional
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
@@ -13,11 +14,24 @@ settings = get_settings()
 
 class AuthService:
     """
-    Authentication service with DB-backed login lockout.
+    now = datetime.now(timezone.utc)
+    window_start = now - timedelta(minutes=settings.LOGIN_LOCKOUT_WINDOW_MINUTES)
 
-    Sprint 3 change: the module-level _failed_attempts dict has been
-    replaced with LoginAttemptRepository.  Lockout state now persists
-    across restarts and works correctly across multiple app instances.
+    # Prune attempts outside the current window
+    _failed_attempts[email] = [
+        t for t in _failed_attempts[email] if t > window_start
+    ]
+
+    if len(_failed_attempts[email]) >= settings.LOGIN_LOCKOUT_MAX_ATTEMPTS:
+        raise ValueError(
+            f"{ErrorCodes.AUTH_INVALID_CREDENTIALS}:Too many failed login attempts. "
+            f"Try again in {settings.LOGIN_LOCKOUT_WINDOW_MINUTES} minutes."
+        )
+
+
+def _record_failure(email: str) -> None:
+    """Record a failed login attempt for this email."""
+    _failed_attempts[email].append(datetime.now(timezone.utc))
 
     The public interface is identical to Sprint 2 — callers do not need
     to change.  Only __init__ gains a second argument.

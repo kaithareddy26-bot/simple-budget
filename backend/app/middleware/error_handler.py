@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from datetime import datetime, timezone
+from slowapi.errors import RateLimitExceeded
 from app.schemas.error_schemas import ErrorCodes
 import logging
 
@@ -25,6 +26,8 @@ def _http_reason(status_code: int) -> str:
         return "Not Found"
     if status_code == 409:
         return "Conflict"
+    if status_code == 429:
+        return "Too Many Requests"
     return "Internal Server Error"
 
 
@@ -221,3 +224,15 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         message=message,
     )
     return JSONResponse(status_code=status_code, content=payload)
+
+
+async def rate_limit_exception_handler(request: Request, exc: RateLimitExceeded):
+    """Handle SlowAPI 429 responses using the standard error envelope."""
+    message = str(getattr(exc, "detail", "Rate limit exceeded"))
+    payload = _week4_payload(
+        request=request,
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        error_code=ErrorCodes.SYS_RATE_LIMIT,
+        message=message,
+    )
+    return JSONResponse(status_code=status.HTTP_429_TOO_MANY_REQUESTS, content=payload)

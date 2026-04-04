@@ -15,8 +15,9 @@ Run with coverage:
 """
 
 import pytest
+import re
 from unittest.mock import Mock, patch
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from tests.conftest import (
     make_user,
@@ -25,6 +26,14 @@ from tests.conftest import (
 )
 from app.schemas.error_schemas import ErrorCodes
 from app.config import get_settings
+
+
+def _rate_limit_count(limit_value: str) -> int:
+    """Extract the request-count component from a SlowAPI/limits rate string."""
+    match = re.search(r"\d+", limit_value)
+    if not match:
+        raise ValueError(f"Could not parse rate-limit count from '{limit_value}'")
+    return int(match.group(0))
 
 
 # ===========================================================================
@@ -82,14 +91,23 @@ class TestLoginLockout:
         self.mock_lockout_repo.clear.assert_called_once_with(self.email)
 
     def test_lockout_window_expires(self):
-        """record_failure is called on each failed login."""
-        self.mock_repo.get_by_email.return_value = None
-        mock_row = Mock()
-        mock_row.attempt_count = 1
-        self.mock_lockout_repo.record_failure.return_value = mock_row
-        with pytest.raises(ValueError):
-            self.service.login_user(self.email, "password")
-        self.mock_lockout_repo.record_failure.assert_called_once()
+        """Attempts older than the window do not count toward lockout."""
+        from app.config import get_settings
+        from app.services import auth_service as svc_module
+
+        max_attempts = get_settings().LOGIN_LOCKOUT_MAX_ATTEMPTS
+        window_minutes = get_settings().LOGIN_LOCKOUT_WINDOW_MINUTES
+
+        # Inject MAX_ATTEMPTS failures that are just outside the window
+        old_time = datetime.now(timezone.utc) - timedelta(minutes=window_minutes + 1)
+        svc_module._failed_attempts[self.email] = [old_time] * max_attempts
+
+        # Next attempt should NOT be locked (old failures have expired)
+        self.mock_repo.get_by_email.return_value = make_user(email=self.email)
+        with patch("app.services.auth_service.verify_password", return_value=False):
+            with pytest.raises(ValueError) as exc:
+                self.service.login_user(self.email, "wrongpassword")
+        assert "Too many" not in str(exc.value)
 
     def test_nonexistent_user_still_records_failure(self):
         """Email not found still records a failure attempt."""
@@ -127,52 +145,48 @@ class TestRateLimiting:
     """
 
     def test_login_rate_limit_returns_429_after_threshold(self, unauth_client):
-        """POST /auth/login returns 429 after threshold when rate limiting is on.
-
-        Rate limiting is disabled in the test environment (RATE_LIMIT_ENABLED=false)
-        so we just verify that requests succeed (don't blow up) when the limiter
-        is off, and skip the 429 assertion.
-        """
-        settings = get_settings()
-        if not settings.RATE_LIMIT_ENABLED:
-            pytest.skip("Rate limiting disabled in test environment (RATE_LIMIT_ENABLED=false)")
-
+        """POST /auth/login allows N requests, then N+1 returns 429."""
         client = unauth_client["client"]
         svc = unauth_client["auth_service"]
+        settings = get_settings()
+        limit = _rate_limit_count(settings.LOGIN_RATE_LIMIT)
+
+        # Make every login attempt fail so we don't clear the counter
         svc.login_user.side_effect = ValueError(
             f"{ErrorCodes.AUTH_INVALID_CREDENTIALS}:Invalid email or password"
         )
 
-        responses = []
-        for _ in range(10):
+        # First N calls should not be 429.
+        for _ in range(limit):
             resp = client.post(
                 "/api/v1/auth/login",
                 json={"email": "test@example.com", "password": "wrong"},
             )
-            responses.append(resp.status_code)
+            assert resp.status_code == 401
 
-        assert 429 in responses, (
-            f"Expected a 429 after repeated login attempts, got: {responses}"
+        # N+1 must be rate-limited with standard envelope.
+        resp = client.post(
+            "/api/v1/auth/login",
+            json={"email": "test@example.com", "password": "wrong"},
         )
+        assert resp.status_code == 429
+        body = resp.json()
+        assert_error_shape(body, 429, ErrorCodes.SYS_RATE_LIMIT)
+        assert body["message"]
 
     def test_register_rate_limit_returns_429_after_threshold(self, unauth_client):
-        """POST /auth/register returns 429 after threshold when rate limiting is on.
-
-        Rate limiting is disabled in the test environment (RATE_LIMIT_ENABLED=false)
-        so we skip this test when the limiter is off.
-        """
-        settings = get_settings()
-        if not settings.RATE_LIMIT_ENABLED:
-            pytest.skip("Rate limiting disabled in test environment (RATE_LIMIT_ENABLED=false)")
-
+        """POST /auth/register allows N requests, then N+1 returns 429."""
         client = unauth_client["client"]
         svc = unauth_client["auth_service"]
+        settings = get_settings()
+        limit = _rate_limit_count(settings.REGISTER_RATE_LIMIT)
+
         svc.register_user.side_effect = ValueError(
             f"{ErrorCodes.USER_EXISTS}:Already exists"
         )
 
-        responses = []
-        for _ in range(10):
+        # First N calls should not be 429.
+        for _ in range(limit):
             resp = client.post(
                 "/api/v1/auth/register",
                 json={
@@ -181,16 +195,29 @@ class TestRateLimiting:
                     "full_name": "Spam User",
                 },
             )
-            responses.append(resp.status_code)
+            assert resp.status_code == 409
 
-        assert 429 in responses, (
-            f"Expected a 429 after repeated register attempts, got: {responses}"
+        # N+1 must be rate-limited with standard envelope.
+        resp = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "spam@example.com",
+                "password": "password123",
+                "full_name": "Spam User",
+            },
         )
+        assert resp.status_code == 429
+        body = resp.json()
+        assert_error_shape(body, 429, ErrorCodes.SYS_RATE_LIMIT)
+        assert body["message"]
 
     def test_health_endpoint_not_rate_limited(self, unauth_client):
-        """GET /health should never return 429 — it has no rate limit decorator."""
+        """GET /health should never return 429, even past global default limits."""
         client = unauth_client["client"]
-        for _ in range(20):
+        settings = get_settings()
+        over_limit = _rate_limit_count(settings.GLOBAL_RATE_LIMIT) + 10
+
+        for _ in range(over_limit):
             resp = client.get("/health")
             assert resp.status_code == 200, (
                 f"Health endpoint should not be rate limited, got {resp.status_code}"

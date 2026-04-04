@@ -79,17 +79,16 @@ simple-budget/
 │ │ ├── models/
 │ │ ├── schemas/
 │ │ ├── utils/
-│ │ └── main.py
-│ ├── config.py
+│ │ ├── main.py
+│ │ └── config.py
+│ ├── .env.example
 │ ├── requirements.txt
 │ ├── scripts/
 │ │ └── export_openapi.py
 │ └── tests/
 │ └── (test files)
-├── .env.example
-│── docs
+├── docs/
 ├── README.md
-├── requirements.txt (could also be in backend)
 └── (possibly other config files)
 
 ---

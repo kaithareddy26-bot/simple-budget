@@ -1,6 +1,4 @@
 from fastapi import APIRouter, Depends, Request, status
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from app.schemas.auth_schemas import (
     UserRegisterRequest,
@@ -12,9 +10,9 @@ from app.schemas.error_schemas import ErrorResponse
 from app.services.auth_service import AuthService
 from app.dependencies import get_auth_service
 from app.config import get_settings
+from app.rate_limiter import limiter
 
 settings = get_settings()
-limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 

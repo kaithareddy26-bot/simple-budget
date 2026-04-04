@@ -18,6 +18,7 @@ from app.controllers import (
 )
 from slowapi import _rate_limit_exceeded_handler as rate_limit_exception_handler
 from app.middleware.error_handler import (
+    rate_limit_exception_handler,
     validation_exception_handler,
     value_error_handler,
     integrity_error_handler,
@@ -79,6 +80,7 @@ app.include_router(report_router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health", tags=["Health"])
+@limiter.exempt
 async def health_check():
     """Health check endpoint."""
     return {

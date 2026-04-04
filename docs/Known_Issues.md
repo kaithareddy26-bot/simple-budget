@@ -10,13 +10,11 @@ None currently known.
 
 ## P1 (Major)
 
-1. No rate limiting on API endpoints.
-2. No password reset email functionality.
-3. No centralized/structured production observability stack.
+1. No password reset email functionality.
+2. No centralized/structured production observability stack.
 
 Workarounds:
 
-- Use WAF/API gateway throttling rules at the edge until app-level rate limiting is added.
 - Handle password resets manually through administrator support workflow.
 - Configure external log aggregation (for example, platform logs + alert rules) for operational visibility.
 
@@ -50,13 +48,13 @@ Workarounds:
 ## Security Limitations
 
 - No multi-factor authentication.
-- No brute-force protection on login.
+- Login lockout/rate limiting state is in-memory by default (not distributed across instances).
 - Basic CORS configuration.
 
 Workarounds:
 
 - Restrict origin allowlist by environment.
-- Add reverse-proxy request throttling and temporary IP blocking for repeated failed logins.
+- For multi-instance deployments, use shared rate-limit/lockout storage (for example Redis-backed limits).
 
 ---
 
@@ -77,6 +75,5 @@ Workarounds:
 
 - Budget visualization charts
 - Email notifications
-- Rate limiting
 - Monitoring dashboard
 - Data export features

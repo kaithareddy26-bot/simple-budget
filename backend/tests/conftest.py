@@ -55,6 +55,24 @@ def _next_client_host() -> str:
     return f"203.0.113.{host_octet}"
 
 
+def _reset_rate_limiter_state() -> None:
+    """Best-effort limiter reset for deterministic tests."""
+    limiter = getattr(getattr(app, "state", None), "limiter", None)
+    storage = getattr(limiter, "_storage", None)
+    if storage is None:
+        return
+
+    for method_name in ("reset", "clear"):
+        method = getattr(storage, method_name, None)
+        if callable(method):
+            try:
+                method()
+            except TypeError:
+                # Some storage backends expect optional args for clear/reset.
+                pass
+            return
+
+
 def make_user(
     user_id: UUID = FIXED_USER_ID,
     email: str = "test@example.com",
@@ -247,6 +265,7 @@ def client(service_mocks):
     app.dependency_overrides[get_expense_service] = lambda: service_mocks["expense"]
     app.dependency_overrides[get_report_service] = lambda: service_mocks["report"]
 
+    _reset_rate_limiter_state()
     with TestClient(
         app,
         raise_server_exceptions=False,
@@ -274,6 +293,7 @@ def auth_client(token_data):
     app.dependency_overrides[get_income_service] = lambda: mock_income_service
     app.dependency_overrides[get_report_service] = lambda: mock_report_service
 
+    _reset_rate_limiter_state()
     with TestClient(
         app,
         raise_server_exceptions=False,
@@ -307,6 +327,7 @@ def unauth_client():
     app.dependency_overrides[get_income_service] = lambda: mock_income_service
     app.dependency_overrides[get_report_service] = lambda: mock_report_service
 
+    _reset_rate_limiter_state()
     with TestClient(
         app,
         raise_server_exceptions=False,

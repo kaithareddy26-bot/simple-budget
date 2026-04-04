@@ -89,3 +89,4 @@ class ErrorCodes:
     # System errors (SYS-xxx)
     SYS_INTERNAL_ERROR = "SYS-001"
     SYS_DATABASE_ERROR = "SYS-002"
+    SYS_RATE_LIMIT = "SYS-003"

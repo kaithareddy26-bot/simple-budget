@@ -1,6 +1,4 @@
 from fastapi import APIRouter, Depends, Request, status, Query
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from app.schemas.report_schemas import MonthlySummaryResponse
 from app.schemas.error_schemas import ErrorResponse
@@ -8,9 +6,9 @@ from app.schemas.auth_schemas import TokenData
 from app.services.report_service import ReportService
 from app.dependencies import get_report_service, get_current_user
 from app.config import get_settings
+from app.rate_limiter import limiter
 
 settings = get_settings()
-limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
 

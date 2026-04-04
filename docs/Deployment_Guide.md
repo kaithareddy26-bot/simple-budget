@@ -19,20 +19,22 @@ Cross-Platform Budgeting Application
 2. Log into Render.
 3. Create new Web Service.
 4. Connect repository.
-5. Set build command:
+5. Set service root directory to `backend/`.
+6. Set build command:
 
 pip install -r requirements.txt
 
-6. Set start command:
+7. Set start command:
 
 uvicorn app.main:app --host 0.0.0.0 --port 10000
 
-7. Add environment variables:
+8. Add environment variables:
    - DATABASE_URL
    - SECRET_KEY
-   - JWT_SECRET
+   - ACCESS_TOKEN_EXPIRE_MINUTES
+   - API_V1_PREFIX
 
-8. Deploy.
+9. Deploy.
 
 ---
 
@@ -63,8 +65,8 @@ Backend:
 
 - DATABASE_URL
 - SECRET_KEY
-- JWT_SECRET
 - ACCESS_TOKEN_EXPIRE_MINUTES
+- API_V1_PREFIX
 
 Frontend:
 

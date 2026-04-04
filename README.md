@@ -14,6 +14,14 @@ https://jl7283.github.io/simple-budget/api/
 
 This documentation is automatically generated from the OpenAPI specification via GitHub Actions.
 
+## Security Documentation
+
+For backend security controls and protections, see:
+
+- [Backend security controls](backend/README.md#security-controls)
+- [API authentication and rate limiting details](docs/API_Documentation.md#authentication)
+- [API error response examples](docs/API_Documentation.md#error-codes)
+
 ## Key Features
 
 Secure user registration and JWT authentication
