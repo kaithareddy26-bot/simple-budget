@@ -15,7 +15,7 @@ export default function AlertMessage({
     backgroundColor: isError ? "red" : "green"
 	}
   return (
-    <Banner style={bannerTheme} visible={true}>
+    <Banner testID="alert-message" style={bannerTheme} visible={true}>
       <Text theme={textTheme} variant="headlineMedium">{toTitleCase(message)}</Text>
     </Banner>
   );

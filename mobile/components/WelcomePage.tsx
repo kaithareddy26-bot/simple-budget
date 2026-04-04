@@ -2,7 +2,7 @@ import AppContext from "@/app/context/AppContext";
 import { useIsFocused } from "@react-navigation/native";
 import { Redirect } from "expo-router";
 import { useCallback, useContext, useEffect, useState } from "react";
-import { ScrollView } from "react-native";
+import { ScrollView, View } from "react-native";
 import { Button, Text, TextInput } from "react-native-paper";
 import getErrorMessage from "@/utilities/getErrorMessage";
 import ExpenseCard from "./utility/ExpenseCard";
@@ -18,7 +18,7 @@ interface ExpenseData {
   note?: string;
 }
 
-export function WelcomePage() {
+function WelcomePage() {
   const { jwt } = useContext(AppContext);
   const [errorMessage, setErrorMessage] = useState("");
   const [budgetData, setBudgetData] = useState<BudgetData | null>(null);
@@ -162,7 +162,7 @@ export function WelcomePage() {
     return <Redirect href="/login" />;
   }
   return (
-    <>
+    <View testID="welcome-page">
       <ScrollView>
         <Text theme={blackTextTheme} variant="headlineLarge">{errorMessage}</Text>
         {requiresBudgetSetup ? (
@@ -184,6 +184,9 @@ export function WelcomePage() {
           <ExpenseCard key={expense.id} header={expense.category} amount={expense.amount} note={expense.note || ""} />
         ))}
       </ScrollView>
-    </>
+    </View>
   );
 }
+
+export default WelcomePage;
+export { WelcomePage };

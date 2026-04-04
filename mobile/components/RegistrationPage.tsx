@@ -9,6 +9,7 @@ import { Button, Text, TextInput } from "react-native-paper";
 export default function RegistrationPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -30,6 +31,7 @@ export default function RegistrationPage() {
       setEmail("");
       setFullName("");
       setPassword("");
+      setConfirmPassword("");
       setErrorMessage("");
       setSuccessMessage("");
     }
@@ -85,6 +87,7 @@ export default function RegistrationPage() {
       {errorMessage && <AlertMessage message={errorMessage} isError={true} />}
       {successMessage && <AlertMessage message={successMessage} isError={false} />}
       <TextInput
+        testID="email-input"
         mode="outlined"
         style={sharedStyles.lightMargin.textInput}
         placeholder="Email"
@@ -105,6 +108,7 @@ export default function RegistrationPage() {
         }}
       />
       <TextInput
+        testID="password-input"
         mode="outlined"
         style={sharedStyles.lightMargin.textInput}
         placeholder="Password"
@@ -115,7 +119,20 @@ export default function RegistrationPage() {
         }}
         secureTextEntry={true}
       />
+      <TextInput
+        testID="confirm-password-input"
+        mode="outlined"
+        style={sharedStyles.lightMargin.textInput}
+        placeholder="Confirm Password"
+        value={confirmPassword}
+        onChangeText={(value) => {
+          clearMessages();
+          setConfirmPassword(value);
+        }}
+        secureTextEntry={true}
+      />
       <Button
+        testID="register-button"
         theme={sharedStyles.greenButton}
         mode="contained"
         onPress={handleRegistrationSubmit}

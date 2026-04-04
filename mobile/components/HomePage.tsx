@@ -3,7 +3,7 @@ import sharedStyles from "@/styles/shared";
 import { Redirect } from "expo-router";
 import { useContext } from "react";
 import { Text } from "react-native-paper";
-export function  HomePage() {
+export function HomePage() {
   const { jwt } = useContext(AppContext);
 
   if (!jwt) {
@@ -11,9 +11,12 @@ export function  HomePage() {
   }
 
   return (
-      <Text variant="displayLarge" style={sharedStyles.centeredText.text} theme={{ colors: { onSurface: "black" } }}>
+      <>
+      <Text testID="home-page" variant="displayLarge" style={sharedStyles.centeredText.text} theme={{ colors: { onSurface: "black" } }}>
         Your JWT is: {jwt}
       </Text>
+      </>
         );
 }
+export default HomePage;
 export default HomePage;
