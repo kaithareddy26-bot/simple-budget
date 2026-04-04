@@ -17,6 +17,8 @@ import pytest
 
 # Ensure app imports don't try to connect to real Postgres during test startup.
 os.environ.setdefault("DATABASE_URL", "postgresql://fake:fake@localhost/fake")
+# Disable rate limiting for unit tests so SlowAPIMiddleware is never added.
+os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 
 from fastapi.testclient import TestClient  # noqa: E402
 

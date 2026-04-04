@@ -1,0 +1,26 @@
+# Isolated PostgreSQL for integration tests only.
+# Runs on port 5433 — never collides with the dev DB on 5432.
+#
+# Start:  docker-compose -f docker-compose.test.yml up -d
+# Stop:   docker-compose -f docker-compose.test.yml down -v
+#
+# The tmpfs mount keeps all data in RAM so `down -v` gives a
+# fully clean slate on the next `up -d` with no stale files.
+
+services:
+  db_test:
+    image: postgres:15-alpine
+    container_name: budget_test_db
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_pass
+      POSTGRES_DB: budget_test
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d budget_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    tmpfs:
+      - /var/lib/postgresql/data

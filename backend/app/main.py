@@ -16,6 +16,7 @@ from app.controllers import (
     expense_router,
     report_router,
 )
+from slowapi import _rate_limit_exceeded_handler as rate_limit_exception_handler
 from app.middleware.error_handler import (
     rate_limit_exception_handler,
     validation_exception_handler,
@@ -42,23 +43,27 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Attach limiter to app state so route decorators can reach it
-app.state.limiter = limiter
-
-# SlowAPI middleware must be added BEFORE other middleware
-app.add_middleware(SlowAPIMiddleware)
+# ---------------------------------------------------------------------------
+# Rate limiting — only enabled when RATE_LIMIT_ENABLED=true (default).
+# Set RATE_LIMIT_ENABLED=false in .env.test to disable for integration tests.
+# SlowAPIMiddleware MUST be omitted when disabled — it always reads
+# request.state.view_rate_limit which is only set by the real limiter.
+# ---------------------------------------------------------------------------
+if settings.RATE_LIMIT_ENABLED:
+    app.state.limiter = limiter
+    app.add_middleware(SlowAPIMiddleware)
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT"],       # only what the API uses
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Authorization", "Content-Type"],
     expose_headers=[],
 )
 
 # Exception handlers
-app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(ValueError, value_error_handler)
 app.add_exception_handler(IntegrityError, integrity_error_handler)

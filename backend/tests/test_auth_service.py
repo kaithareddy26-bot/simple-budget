@@ -12,7 +12,14 @@ class TestAuthService:
     def setup_method(self):
         """Set up test fixtures."""
         self.mock_repo = Mock()
-        self.service = AuthService(self.mock_repo)
+        self.mock_lockout_repo = Mock()
+        self.mock_lockout_repo.is_locked.return_value = False
+        # record_failure must return an object with attempt_count so the
+        # '>=' comparison in _record_and_maybe_lock doesn't crash.
+        _mock_attempt = Mock()
+        _mock_attempt.attempt_count = 1
+        self.mock_lockout_repo.record_failure.return_value = _mock_attempt
+        self.service = AuthService(self.mock_repo, self.mock_lockout_repo)
 
     def test_register_user_success(self):
         """Test successful user registration."""

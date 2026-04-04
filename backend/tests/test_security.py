@@ -42,24 +42,23 @@ def _rate_limit_count(limit_value: str) -> int:
 
 class TestLoginLockout:
     """
-    Unit tests for the per-email sliding-window lockout in AuthService.
-    These test the service directly — no HTTP overhead.
+    Unit tests for the DB-backed lockout in AuthService (Sprint 3).
+    The lockout repo is fully mocked — we test service orchestration only.
     """
 
     def setup_method(self):
-        """Fresh mock repo + service + cleared attempt state for each test."""
-        from app.services.auth_service import AuthService, reset_attempts_for_testing
-        self.reset = reset_attempts_for_testing
+        from app.services.auth_service import AuthService
         self.mock_repo = Mock()
-        self.service = AuthService(self.mock_repo)
+        self.mock_lockout_repo = Mock()
+        self.mock_lockout_repo.is_locked.return_value = False
+        # record_failure must return an object with attempt_count
+        _mock_attempt = Mock()
+        _mock_attempt.attempt_count = 1
+        self.mock_lockout_repo.record_failure.return_value = _mock_attempt
+        self.service = AuthService(self.mock_repo, self.mock_lockout_repo)
         self.email = "lockout@example.com"
-        reset_attempts_for_testing(self.email)
-
-    def teardown_method(self):
-        self.reset(self.email)
 
     def _make_failing_login(self):
-        """Helper: configure repo so login fails (wrong password)."""
         self.mock_repo.get_by_email.return_value = make_user(email=self.email)
         with patch("app.services.auth_service.verify_password", return_value=False):
             with pytest.raises(ValueError):
@@ -68,51 +67,28 @@ class TestLoginLockout:
     def test_single_failure_does_not_lock(self):
         """One bad attempt should not trigger lockout."""
         self._make_failing_login()
-        # Second attempt should still reach credential check, not lockout
         self.mock_repo.get_by_email.return_value = make_user(email=self.email)
         with patch("app.services.auth_service.verify_password", return_value=False):
             with pytest.raises(ValueError) as exc:
                 self.service.login_user(self.email, "wrongpassword")
-        # Should be invalid credentials, NOT a lockout message
         assert "Too many" not in str(exc.value)
 
     def test_lockout_triggers_after_max_attempts(self):
-        """After MAX_ATTEMPTS failures, next attempt raises lockout error."""
-        from app.config import get_settings
-        max_attempts = get_settings().LOGIN_LOCKOUT_MAX_ATTEMPTS
-
-        for _ in range(max_attempts):
-            self._make_failing_login()
-
-        # This attempt should be blocked before even hitting the DB
+        """If repo says locked, service raises before hitting DB."""
+        self.mock_lockout_repo.is_locked.return_value = True
         with pytest.raises(ValueError) as exc:
             self.service.login_user(self.email, "anypassword")
-
         assert "Too many" in str(exc.value)
         assert ErrorCodes.AUTH_INVALID_CREDENTIALS in str(exc.value)
-        # Confirm DB was NOT called on the locked-out attempt
-        call_count_before = self.mock_repo.get_by_email.call_count
-        assert call_count_before == max_attempts  # no extra call
+        self.mock_repo.get_by_email.assert_not_called()
 
     def test_successful_login_clears_failure_counter(self):
-        """A successful login resets the failure count."""
-        # Fail twice
-        self._make_failing_login()
-        self._make_failing_login()
-
-        # Succeed once
+        """Successful login calls lockout_repo.clear."""
         self.mock_repo.get_by_email.return_value = make_user(email=self.email)
         with patch("app.services.auth_service.verify_password", return_value=True):
             with patch("app.services.auth_service.create_access_token", return_value="tok"):
                 self.service.login_user(self.email, "correctpassword")
-
-        # Now fail again — counter should be reset, no lockout yet
-        self._make_failing_login()
-        with patch("app.services.auth_service.verify_password", return_value=False):
-            self.mock_repo.get_by_email.return_value = make_user(email=self.email)
-            with pytest.raises(ValueError) as exc:
-                self.service.login_user(self.email, "wrongpassword")
-        assert "Too many" not in str(exc.value)
+        self.mock_lockout_repo.clear.assert_called_once_with(self.email)
 
     def test_lockout_window_expires(self):
         """Attempts older than the window do not count toward lockout."""
@@ -134,36 +110,24 @@ class TestLoginLockout:
         assert "Too many" not in str(exc.value)
 
     def test_nonexistent_user_still_records_failure(self):
-        """Failed lookup (email not found) should record a failure attempt."""
-        from app.services import auth_service as svc_module
+        """Email not found still records a failure attempt."""
         self.mock_repo.get_by_email.return_value = None
-
+        mock_row = Mock()
+        mock_row.attempt_count = 1
+        self.mock_lockout_repo.record_failure.return_value = mock_row
         with pytest.raises(ValueError):
             self.service.login_user(self.email, "password")
-
-        assert len(svc_module._failed_attempts[self.email]) == 1
+        self.mock_lockout_repo.record_failure.assert_called_once()
 
     def test_lockout_is_per_email_not_global(self):
-        """Locking out one email must not affect a different email."""
-        from app.config import get_settings
+        """is_locked is called with the specific email."""
         other_email = "other@example.com"
-        from app.services.auth_service import reset_attempts_for_testing
-        reset_attempts_for_testing(other_email)
-
-        max_attempts = get_settings().LOGIN_LOCKOUT_MAX_ATTEMPTS
-
-        # Lock out self.email
-        for _ in range(max_attempts):
-            self._make_failing_login()
-
-        # other_email should still work
         self.mock_repo.get_by_email.return_value = make_user(email=other_email)
         with patch("app.services.auth_service.verify_password", return_value=True):
             with patch("app.services.auth_service.create_access_token", return_value="tok"):
                 token = self.service.login_user(other_email, "correctpassword")
         assert token == "tok"
-
-        reset_attempts_for_testing(other_email)
+        self.mock_lockout_repo.is_locked.assert_called_with(other_email)
 
 
 # ===========================================================================
