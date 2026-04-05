@@ -81,6 +81,7 @@ export default function LoginPage() {
             {errorMessage ? <AlertMessage message={errorMessage} isError={true} /> : null}
             {successMessage ? <AlertMessage message={successMessage} isError={false} /> : null}
             <TextInput
+                testID="email-input"
                 placeholder="Email"
                 value={email}
                 onChangeText={(value) => {
@@ -89,6 +90,7 @@ export default function LoginPage() {
                 }}
             />
             <TextInput
+                testID="password-input"
                 placeholder="Password"
                 value={password}
                 onChangeText={(value) => {
@@ -97,7 +99,7 @@ export default function LoginPage() {
                 }}
                 secureTextEntry={true}
             />
-            <Button mode="elevated" onPress={handleLoginSubmit}>Login</Button>
+            <Button testID="login-button" mode="elevated" onPress={handleLoginSubmit}>Login</Button>
         </>
     );
 }

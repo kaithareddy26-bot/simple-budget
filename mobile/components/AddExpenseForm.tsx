@@ -138,6 +138,7 @@ export function AddExpenseForm() {
                 Enter a new expense.
             </Text>
             <TextInput
+                testID="category-input"
                 label="Category"
                 value={category}
                 onChangeText={text => setCategory(text)}
@@ -145,6 +146,7 @@ export function AddExpenseForm() {
 
             />
             <TextInput
+                testID="amount-input"
                 label="Amount ($)"
                 value={amount}
                 onChangeText={text => setAmount(text)}
@@ -152,12 +154,13 @@ export function AddExpenseForm() {
 
             />
             <TextInput
+                testID="note-input"
                 label="Note"
                 value={note}
                 onChangeText={text => setNote(text)}
                 style={{ marginBottom: 16 }}
             />
-            <Button theme={sharedStyles.greenButton}
+            <Button testID="add-expense-button" theme={sharedStyles.greenButton}
                 mode="contained" onPress={handleFormSubmit}>Submit</Button>
         </>
     );
