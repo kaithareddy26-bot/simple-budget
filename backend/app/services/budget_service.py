@@ -1,13 +1,12 @@
 from uuid import UUID
 from decimal import Decimal
+from datetime import datetime, timezone
 from typing import Optional
 import re
 from app.models.budget import Budget
 from app.repositories.budget_repository import BudgetRepository
 from app.schemas.error_schemas import ErrorCodes
 
-# Compatibility: allow tests to run even if SQLAlchemy isn't
-# installed/resolved by the editor
 try:
     from sqlalchemy.exc import IntegrityError as SAIntegrityError
 except Exception:
@@ -15,9 +14,15 @@ except Exception:
 
 
 class BudgetService:
-    """Budget service containing business logic."""
+    """Budget service — enforces all budget business rules.
 
-    # Strict YYYY-MM (e.g., 2026-02). Note: does not validate month range 01-12.
+    Responsibilities:
+    - Month format and range validation (YYYY-MM, 01-12)
+    - Amount validation (must be > 0)
+    - User-scoped access control (users can only read/update their own budgets)
+    - Duplicate-budget prevention with race-condition-safe DB fallback
+    """
+
     _MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
 
     def __init__(self, budget_repository: BudgetRepository):
@@ -25,17 +30,15 @@ class BudgetService:
 
     @classmethod
     def _validate_month_strict(cls, month: str) -> None:
-        """
-        Strictly validate month in YYYY-MM format.
-        Raises ValueError with ErrorCodes on failure.
+        """Validate that month is a string in YYYY-MM format with MM in 01-12.
+
+        Raises:
+            ValueError: BUD_INVALID_MONTH if format or range is invalid.
         """
         if not isinstance(month, str) or not cls._MONTH_RE.match(month):
             raise ValueError(
                 f"{ErrorCodes.BUD_INVALID_MONTH}:Month must be in YYYY-MM format"
             )
-
-        # Enforce month range 01-12
-        # (stricter than the DB regex, but matches domain expectations)
         mm = int(month[5:7])
         if mm < 1 or mm > 12:
             raise ValueError(
@@ -43,52 +46,41 @@ class BudgetService:
             )
 
     def create_budget(self, user_id: UUID, month: str, amount: Decimal) -> Budget:
-        """
-        Create a new monthly budget.
+        """Create a new monthly budget for the given user.
 
-        Business Rules:
-        - One budget per user per month
+        Business rules:
+        - One budget per user per month (unique constraint)
         - Amount must be greater than 0
-        - Month must be in YYYY-MM format (strict)
+        - Month must be YYYY-MM with MM in 01-12
 
         Raises:
-            ValueError: If budget already exists for user and month,
-            invalid month, or amount <= 0
+            ValueError: BUD_INVALID_MONTH, BUD_INVALID_AMOUNT, or BUD_ALREADY_EXISTS.
         """
-        # Validate month strictly (service-layer)
         self._validate_month_strict(month)
 
-        # Validate amount
         if amount <= 0:
             raise ValueError(
                 f"{ErrorCodes.BUD_INVALID_AMOUNT}:Budget amount must be greater than 0"
             )
 
-        # Pre-check (still useful for friendly errors, but DB enforces uniqueness)
         existing_budget = self.budget_repository.get_by_user_and_month(user_id, month)
         if existing_budget:
             raise ValueError(
                 f"{ErrorCodes.BUD_ALREADY_EXISTS}:Budget already exists for this month"
             )
 
-        # Create budget entity
         budget = Budget(user_id=user_id, month=month, amount=amount)
 
-        # Persist budget (catch DB enforcement for concurrency/race conditions)
         try:
             return self.budget_repository.create(budget)
         except Exception as e:
-            # Compatibility: handle both real SQLAlchemy IntegrityError
-            # and test IntegrityErrorStub (.orig)
             if SAIntegrityError is not None and isinstance(e, SAIntegrityError):
                 db_error = str(getattr(e, "orig", e)).lower()
             elif hasattr(e, "orig"):
                 db_error = str(getattr(e, "orig")).lower()
             else:
-                raise  # Not a DB integrity error we know how to map
+                raise
 
-            # Map DB enforcement back to consistent domain errors
-            # (race-condition safe)
             if (
                 "uq_user_month" in db_error
                 or "unique constraint" in db_error
@@ -100,8 +92,7 @@ class BudgetService:
                 ) from e
 
             if "ck_budgets_amount_positive" in db_error or (
-                "check constraint" in db_error
-                and "amount" in db_error
+                "check constraint" in db_error and "amount" in db_error
             ):
                 raise ValueError(
                     f"{ErrorCodes.BUD_INVALID_AMOUNT}:"
@@ -109,85 +100,55 @@ class BudgetService:
                 ) from e
 
             if "ck_budgets_month_format" in db_error or (
-                "check constraint" in db_error
-                and "month" in db_error
+                "check constraint" in db_error and "month" in db_error
             ):
                 raise ValueError(
                     f"{ErrorCodes.BUD_INVALID_MONTH}:"
                     "Month must be in YYYY-MM format"
                 ) from e
 
-            # Unknown integrity error: re-raise for middleware/logging
             raise
 
-    def get_budget_by_id(self, budget_id: UUID, user_id: UUID) -> Optional[Budget]:
-        """
-        Get budget by ID.
-
-        Business Rules:
-        - User can only access their own budgets
+    def get_budget_by_id(self, budget_id: UUID, user_id: UUID) -> Budget:
+        """Return the budget identified by budget_id, enforcing user ownership.
 
         Raises:
-            ValueError: If budget not found or unauthorized access
+            ValueError: BUD_NOT_FOUND if the budget does not exist,
+                        BUD_UNAUTHORIZED if it belongs to a different user.
         """
         budget = self.budget_repository.get_by_id(budget_id)
-
         if not budget:
             raise ValueError(f"{ErrorCodes.BUD_NOT_FOUND}:Budget not found")
-
-        # Enforce user-scoped access
         if budget.user_id != user_id:
             raise ValueError(
                 f"{ErrorCodes.BUD_UNAUTHORIZED}:Unauthorized access to budget"
             )
-
         return budget
 
     def update_budget_amount(
         self, budget_id: UUID, user_id: UUID, new_amount: Decimal
     ) -> Budget:
-        """
-        Update budget amount.
-
-        Business Rules:
-        - User can only update their own budgets
-        - Amount must be greater than 0
+        """Update the amount on an existing budget owned by user_id.
 
         Raises:
-            ValueError: If budget not found, unauthorized, or invalid amount
+            ValueError: BUD_INVALID_AMOUNT, BUD_NOT_FOUND, or BUD_UNAUTHORIZED.
         """
-        # Validate amount
         if new_amount <= 0:
             raise ValueError(
                 f"{ErrorCodes.BUD_INVALID_AMOUNT}:Budget amount must be greater than 0"
             )
-
-        # Get budget
         budget = self.get_budget_by_id(budget_id, user_id)
-
-        # Update amount
         budget.amount = new_amount
-
-        # Persist changes
         return self.budget_repository.update(budget)
 
-    def get_current_month_budget(self, user_id: UUID) -> Optional[Budget]:
-        """
-        Get current month's budget for a user.
+    def get_current_month_budget(self, user_id: UUID) -> Budget:
+        """Return the budget for the current calendar month (UTC) for user_id.
 
+        Raises:
+            ValueError: BUD_NOT_FOUND if no budget exists for the current month.
         """
-        from datetime import datetime
-
-        current_month = datetime.now().strftime("%Y-%m")
-        print(
-            "DEBUG: Fetching current month budget for user_id:",
-            user_id,
-            "current_month:",
-            current_month,
-        )
+        current_month = datetime.now(timezone.utc).strftime("%Y-%m")
         budget = self.budget_repository.get_by_user_and_month(user_id, current_month)
-
         if not budget:
             raise ValueError(f"{ErrorCodes.BUD_NOT_FOUND}:Budget not found")
-
         return budget
