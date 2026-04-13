@@ -217,7 +217,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         error_code=error_code,
         message=message,
     )
-    return JSONResponse(status_code=status_code, content=payload)
+    return JSONResponse(status_code=http_status, content=payload)
 
 
 async def rate_limit_exception_handler(request: Request, exc: RateLimitExceeded):

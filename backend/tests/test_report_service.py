@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import Mock
 from uuid import uuid4
 from decimal import Decimal
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from app.services.report_service import ReportService
 from app.models.income import Income
 from app.models.expense import Expense
@@ -121,10 +121,10 @@ class TestReportService:
         assert isinstance(expense_args[2], datetime)
 
         # Assert exact month boundaries (exclusive upper bound)
-        assert income_args[1] == datetime(2024, 3, 1)
-        assert expense_args[1] == datetime(2024, 3, 1)
-        assert income_args[2] == datetime(2024, 4, 1)
-        assert expense_args[2] == datetime(2024, 4, 1)
+        assert income_args[1] == datetime(2024, 3, 1, tzinfo=timezone.utc)
+        assert expense_args[1] == datetime(2024, 3, 1, tzinfo=timezone.utc)
+        assert income_args[2] == datetime(2024, 4, 1, tzinfo=timezone.utc)
+        assert expense_args[2] == datetime(2024, 4, 1, tzinfo=timezone.utc)
 
     def test_get_monthly_summary_invalid_month_format(self):
         """Test monthly summary with invalid month format."""
